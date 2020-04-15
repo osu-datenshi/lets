@@ -1,0 +1,16 @@
+[submodule "common"]
+	path = common
+	url = https://github.com/osuthailand/common.git
+[submodule "secret"]
+	path = secret
+	url = https://github.com/osuthailand/secret.git
+[submodule "pp/oppai-ng"]
+	path = pp/oppai-ng
+	url = https://github.com/Francesco149/oppai-ng.git
+[submodule "pp/oppai-rx"]
+	path = pp/oppai-rx
+	url = https://github.com/osuthailand/ainu-rx-calc.git
+[submodule "pp/catch_the_pp"]
+	path = pp/catch_the_pp
+	url = https://github.com/osuthailand/catch-the-pp.git
+	branch = cython

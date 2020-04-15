@@ -1,0 +1,59 @@
+{
+	"common": {
+		"rankable-mods": {
+			"NOFAIL": true,
+			"EASY": true,
+			"TOUCHSCREEN": true,
+			"HIDDEN": true,
+			"HARDROCK": true,
+			"SUDDENDEATH": true,
+			"DOUBLETIME": true,
+			"RELAX": true,
+			"HALFTIME": true,
+			"NIGHTCORE": true,
+			"FLASHLIGHT": true,
+			"SPUNOUT": true,
+			"RELAX2": false,
+			"PERFECT": true,
+			"KEY1": true,
+			"KEY2": true,
+			"KEY3": true,
+			"KEY4": true,
+			"KEY5": true,
+			"KEY6": true,
+			"KEY7": true,
+			"KEY8": true,
+			"KEY9": true,
+			"KEY10": true,
+			"FADEIN": true,
+			"RANDOM": true,
+			"SCOREV2": false,
+			"AUTOPLAY": false,
+			"LASTMOD": false
+		}
+	},
+	"lets": {
+		"submit": {
+			"max-vanilla-pp": 800,
+			"max-std-pp": 1000000,
+			"score-overwrite": "pp",
+			"loved-dont-give-pp": true,
+			"ignore-x-flag": false
+		},
+		"allowed-beatmap-rankstatus": {
+			"UNKNOWN": false,
+			"NOT_SUBMITTED": false,
+			"PENDING": false,
+			"NEED_UPDATE": false,
+			"RANKED": true,
+			"APPROVED": true,
+			"QUALIFIED": true,
+			"LOVED": true
+		}
+	},
+	"mode": {
+		"anticheat": true,
+		"rank-all-maps": false,
+		"no-pp-cap": false
+	}
+}

@@ -1,0 +1,12 @@
+**/__pycache__
+**/build
+config.ini
+.data
+.data-c
+runserver.bat
+.idea
+common_copied
+common_refractor
+*.c
+*.so
+*.log
