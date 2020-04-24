@@ -35,7 +35,7 @@ from objects import scoreRelax
 from objects import scoreboardRelax
 from objects.charts import BeatmapChart, OverallChart
 from secret import butterCake
-from secret.discord_hooks import Webhook
+from discord_webhook import DiscordWebhook, DiscordEmbed
 
 MODULE_NAME = "submit_modular"
 class handler(requestsManager.asyncRequestHandler):
@@ -270,14 +270,14 @@ class handler(requestsManager.asyncRequestHandler):
 					if type(hack) == str:
 						# THOT DETECTED
 						if glob.conf.config["discord"]["enable"] == True:
-							webhook = Webhook(glob.conf.config["discord"]["ahook"],
-											  color=0xadd836,
-											  footer="Man... this is worst player. [ Client AC ]")
-							webhook.set_title(title=f"Catched some cheater {username} ({userID})")
-							webhook.set_desc(f'This body catched with flag {haxFlags}\nIn enuming: {hack}')
+							webhook = DiscordWebhook(url=glob.conf.config["discord"]["ahook"])
+							embed = DiscordEmbed(title='This is worst cheater', color=242424)
+							embed = DiscordEmbed(name='Catched some cheater {username} ({userID})')
+							embed = DiscordEmbed(description='This body catched with flag {haxFlags}\nIn enuming: {hack}')
 
 							if glob.conf.extra["mode"]["anticheat"] == True:
-								webhook.post()
+								webhook.add_embed(embed)
+								webhook.execute()
 
 			'''
 			ignoreFlags = 4
@@ -624,21 +624,25 @@ class handler(requestsManager.asyncRequestHandler):
 
 					# Second, get the webhook link from config
 					if UsingRelax:
-						url = glob.conf.config["discord"]["rxscore"]
+						urlweb = glob.conf.config["discord"]["rxscore"]
+						webhook = DiscordWebhook(url=urlweb)
+						embed = DiscordEmbed(title='New score Achieved!!')
+						embed = DiscordEmbed(description='[{}] Achieved #1 on mode **{}**, {} +{}!'.format("RELAX", gameModes.getGamemodeFull(s.gameMode), beatmapInfo.songName.encode().decode("ASCII", "ignore"), ScoreMods))
+						embed.add_embed_field(name='Total: {}pp'.format(float("{0:.2f}".format(s.pp))), value='Gained: +{}pp'.format(float("{0:.2f}".format(ppGained))))
+						embed.add_embed_field(name='Played by: {}'.format(username.encode().decode("ASCII", "ignore")), value="[Go to user's profile]({}/rx/u/{})".format(glob.conf.config["server"]["serverurl"], userID))
+						webhook.add_embed(embed)
+						log.info("[RELAX] Score masuk ke discord bro")
+						webhook.execute()
 					else:
-						url = glob.conf.config["discord"]["score"]
-
-					# Then post them!
-					if glob.conf.config["discord"]["enable"] == True:
-						webhook = Webhook(url, color=0xadd8e6, footer="This score was submitted on osu!Ainu")
-						webhook.set_author(name=username.encode().decode("ASCII", "ignore"), icon='https://a.ainu.pw/{}'.format(userID))
-						webhook.set_title(title=f"New score by {username}!")
-						webhook.set_desc("[{}] Achieved #1 on mode **{}**, {} +{}!".format("RELAX" if UsingRelax else "VANILLA", gameModes.getGamemodeFull(s.gameMode), beatmapInfo.songName.encode().decode("ASCII", "ignore"), ScoreMods))
-						webhook.add_field(name='Total: {}pp'.format(float("{0:.2f}".format(s.pp))), value='Gained: +{}pp'.format(float("{0:.2f}".format(ppGained))))
-						webhook.add_field(name='Actual rank: {}'.format(rankInfo["currentRank"]), value='[Download Link](https://storage.ainu.pw/d/{})'.format(beatmapInfo.beatmapSetID))
-						webhook.add_field(name='Played by: {}'.format(username.encode().decode("ASCII", "ignore")), value="[Go to user's profile]({}/{}u/{})".format(glob.conf.config["server"]["serverurl"], "rx/" if UsingRelax else "", userID))
-						webhook.set_image('https://assets.ppy.sh/beatmaps/{}/covers/cover.jpg'.format(beatmapInfo.beatmapSetID))
-						webhook.post()
+						urlweb = glob.conf.config["discord"]["score"]
+						webhook = DiscordWebhook(url=urlweb)
+						embed = DiscordEmbed(title='New score Achieved!!')
+						embed = DiscordEmbed(description='[{}] Achieved #1 on mode **{}**, {} +{}!'.format("VANILLA", gameModes.getGamemodeFull(s.gameMode), beatmapInfo.songName.encode().decode("ASCII", "ignore"), ScoreMods))
+						embed.add_embed_field(name='Total: {}pp'.format(float("{0:.2f}".format(s.pp))), value='Gained: +{}pp'.format(float("{0:.2f}".format(ppGained))))
+						embed.add_embed_field(name='Played by: {}'.format(username.encode().decode("ASCII", "ignore")), value="[Go to user's profile]({}/u/{})".format(glob.conf.config["server"]["serverurl"], userID))
+						webhook.add_embed(embed)
+						log.info("[VANILLA] Score masuk ke discord bro")
+						webhook.execute()
 
 				# Write message to client
 				self.write(output)
@@ -651,7 +655,7 @@ class handler(requestsManager.asyncRequestHandler):
 			newUsername = glob.redis.get("ripple:change_username_pending:{}".format(userID))
 			if newUsername is not None:
 				log.debug("Sending username change request for user {} to Bancho".format(userID))
-				glob.redis.publish("peppy:change_username", json.dumps({
+				glob.redis.publish("peppy:change_usernpame", json.dumps({
 					"userID": userID,
 					"newUsername": newUsername.decode("utf-8")
 				}))
