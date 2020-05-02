@@ -90,7 +90,7 @@ class piano:
 			# makes hit window match what it is ingame.
 			hitWindow300 = int(hitWindow300) + 0.5
 			if scoreMods & mods.DOUBLETIME != 0:
-				hitWindow300 /= 1.5
+				hitWindow300 /= 1.55
 			elif scoreMods & mods.HALFTIME != 0:
 				hitWindow300 /= 0.75
 
@@ -107,9 +107,9 @@ class piano:
 			if scoreMods & mods.EASY != 0:
 				multiplier *= 0.50
 			if scoreMods & mods.DOUBLETIME != 0:
-				multiplier *= 1.45
+				multiplier *= 1.55
 			if scoreMods & mods.NIGHTCORE != 0:
-				multiplier *= 1.45
+				multiplier *= 1.1
 			pp = pow(pow(strainPP, 1.1) + pow(accPP, 1.1), 1.0 / 1.1) * multiplier
 			log.debug("[WIFIPIANO2] Calculated PP: {}".format(pp))
 
