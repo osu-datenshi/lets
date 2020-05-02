@@ -21,3 +21,4 @@ tags
 /swig/python/oppai.py
 *.whl
 *.pyc
+!*.c
