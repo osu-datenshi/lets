@@ -7,7 +7,6 @@ runserver.bat
 .idea
 common_copied
 common_refractor
-!/pp/**/*.c
 *.c
 *.so
 *.log
