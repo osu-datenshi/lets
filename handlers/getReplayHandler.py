@@ -48,14 +48,17 @@ class handler(requestsManager.asyncRequestHandler):
 				raise exceptions.need2FAException(MODULE_NAME, username, ip)
 
 			# Get user ID
-			replayData = glob.db.fetch("SELECT scores.*, users.username AS uname FROM scores LEFT JOIN users ON scores.userid = users.id WHERE scores.id = %s", [replayID])
-			if replayData == None:
+			if UsingRelax:
 				replayData = glob.db.fetch("SELECT scores.*, users.username AS uname FROM scores LEFT JOIN users ON scores.userid = users.id WHERE scores.id = %s", [replayID])
-				fileName = ".data/replays/replay_{}.osr".format(replayID)
-				UsingRelax = False
 			else:
+				replayData = glob.db.fetch("SELECT scores_relax.*, users.username AS uname FROM scores_relax LEFT JOIN users ON scores_relax.userid = users.id WHERE scores_relax.id = %s", [replayID])
+
+			if replayData:
 				fileName = ".data/replays_relax/replay_{}.osr".format(replayID)
 				UsingRelax = True
+			else:
+				fileName = ".data/replays/replay_{}.osr".format(replayID)
+				UsingRelax = False
 
 			# Increment 'replays watched by others' if needed
 			if replayData is not None:
