@@ -24,7 +24,7 @@ class handler(requestsManager.asyncRequestHandler):
 	def asyncGet(self):
 		try:
 			# OOF
-			UsingRelax = False
+			UsingRelax = True
 
 			# Get request ip
 			ip = self.getRequestIP()
@@ -49,9 +49,9 @@ class handler(requestsManager.asyncRequestHandler):
 
 			# Get user ID
 			if UsingRelax:
-				replayData = glob.db.fetch("SELECT scores.*, users.username AS uname FROM scores LEFT JOIN users ON scores.userid = users.id WHERE scores.id = %s", [replayID])
-			else:
 				replayData = glob.db.fetch("SELECT scores_relax.*, users.username AS uname FROM scores_relax LEFT JOIN users ON scores_relax.userid = users.id WHERE scores_relax.id = %s", [replayID])
+			else:
+				replayData = glob.db.fetch("SELECT scores.*, users.username AS uname FROM scores LEFT JOIN users ON scores.userid = users.id WHERE scores.id = %s", [replayID])
 
 			if replayData:
 				fileName = ".data/replays_relax/replay_{}.osr".format(replayID)
