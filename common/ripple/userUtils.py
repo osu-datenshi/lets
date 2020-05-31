@@ -18,7 +18,7 @@ from objects import glob
 
 def getBeatmapTime(beatmapID):
     p = 0
-    r = requests.get("https://storage.ainu.pw/api/b/{}".format(beatmapID)).text
+    r = requests.get("https://storage.datenshi.xyz/api/b/{}".format(beatmapID)).text
     if r != "null\n":
         p = json.loads(r)['TotalLength']
 

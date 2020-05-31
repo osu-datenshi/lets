@@ -192,7 +192,7 @@ class handler(requestsManager.asyncRequestHandler):
 				length = userUtils.getBeatmapTime(beatmapInfo.beatmapID)
 			else:
 				length = math.ceil(int(self.get_argument("ft")) / 1000)
-			if UsingRelax: 	
+			if UsingRelax:
 				userUtils.incrementPlaytimeRX(userID, s.gameMode, length)
 			else:
 				userUtils.incrementPlaytime(userID, s.gameMode, length)
@@ -222,12 +222,24 @@ class handler(requestsManager.asyncRequestHandler):
 					if (s.pp >= rx_pp and s.gameMode == gameModes.STD) and not unrestricted_user and not glob.conf.extra["mode"]["no-pp-cap"]:
 						userUtils.restrict(userID)
 						userUtils.appendNotes(userID, "Restricted due to too high pp gain ({}pp)".format(s.pp))
-						log.warning("**{}** ({}) has been restricted due to too high pp gain **({}pp)**".format(username, userID, s.pp), "cm")
+						dcnel = glob.conf.config["discord"]["autobanned"]
+						webhook = DiscordWebhook(url=dcnel)
+						embed = DiscordEmbed(title='NEW IDIOT CHEATER DETECTED!!')
+						embed = DiscordEmbed(description='**{}** ({}) has been restricted due to too high pp gain and too brutal ({}pp)'.format(username, userID, s.pp))
+						webhook.add_embed(embed)
+						log.info("CHEATER GOBLOK MASUK DISCORD")
+						webhook.execute()
 				else:
 					if (s.pp >= oof_pp and s.gameMode == gameModes.STD) and not unrestricted_user and not glob.conf.extra["mode"]["no-pp-cap"]:
 						userUtils.restrict(userID)
 						userUtils.appendNotes(userID, "Restricted due to too high pp gain ({}pp)".format(s.pp))
-						log.warning("**{}** ({}) has been restricted due to too high pp gain **({}pp)**".format(username, userID, s.pp), "cm")
+						dcnel = glob.conf.config["discord"]["autobanned"]
+						webhook = DiscordWebhook(url=dcnel)
+						embed = DiscordEmbed(title='NEW IDIOT CHEATER DETECTED!!')
+						embed = DiscordEmbed(description='**{}** ({}) has been restricted due to too high pp gain and too brutal ({}pp)'.format(username, userID, s.pp))
+						webhook.add_embed(embed)
+						log.info("CHEATER GOBLOK MASUK DISCORD")
+						webhook.execute()
 
 			# Check notepad hack
 			if bmk is None and bml is None:
@@ -295,6 +307,13 @@ class handler(requestsManager.asyncRequestHandler):
 			if s.score < 0 or s.score > (2 ** 63) - 1 and glob.conf.extra["mode"]["anticheat"]:
 				userUtils.ban(userID)
 				userUtils.appendNotes(userID, "Banned due to negative score (score submitter)")
+				dcnel = glob.conf.config["discord"]["autobanned"]
+				webhook = DiscordWebhook(url=dcnel)
+				embed = DiscordEmbed(title='NEW IDIOT CHEATER DETECTED!!')
+				embed = DiscordEmbed(description='**{}** ({}) has been banned due to negative score (score submitter)'.format(username, userID))
+				webhook.add_embed(embed)
+				log.info("CHEATER GOBLOK MASUK DISCORD")
+				webhook.execute()
 			elif s.score < 0 or s.score > (2 ** 63) - 1 and not glob.conf.extra["mode"]["anticheat"]:
 				alert = "{}, seems like you've exceed the score limit (INT32) or your score is negative, this score won't submit for you.".format(username.encode().decode("ASCII", "ignore"))
 				params = urlencode({"k": glob.conf.config["server"]["apikey"], "to": username.encode().decode("ASCII", "ignore"), "msg": alert})
@@ -316,14 +335,26 @@ class handler(requestsManager.asyncRequestHandler):
 			and glob.conf.extra["mode"]["anticheat"]:
 				userUtils.restrict(userID)
 				userUtils.appendNotes(userID, "Restricted due to too high pp gain and too brutal ({}pp)".format(s.pp))
-				log.warning("**{}** ({}) has been restricted due to too high pp gain and too brutal **({}pp)**".format(username, userID, s.pp), "cm")
+				dcnel = glob.conf.config["discord"]["autobanned"]
+				webhook = DiscordWebhook(url=dcnel)
+				embed = DiscordEmbed(title='NEW IDIOT CHEATER DETECTED!!')
+				embed = DiscordEmbed(description='**{}** ({}) has been restricted due to too high pp gain and too brutal ({}pp)'.format(username, userID, s.pp))
+				webhook.add_embed(embed)
+				log.info("CHEATER GOBLOK MASUK DISCORD")
+				webhook.execute()
 				
 			elif ((s.mods & mods.NIGHTCORE) > 0 and (s.mods & mods.FLASHLIGHT) > 0) \
 			and ((s.mods & mods.HARDROCK) > 0 and (s.mods & mods.HIDDEN) > 0) and s.pp > 1000 \
 			and glob.conf.extra["mode"]["anticheat"]:
 				userUtils.restrict(userID)
 				userUtils.appendNotes(userID, "Restricted due to too high pp gain and too brutal ({}pp)".format(s.pp))
-				log.warning("**{}** ({}) has been restricted due to too high pp gain and too brutal **({}pp)**".format(username, userID, s.pp), "cm")
+				dcnel = glob.conf.config["discord"]["autobanned"]
+				webhook = DiscordWebhook(url=dcnel)
+				embed = DiscordEmbed(title='NEW IDIOT CHEATER DETECTED!!')
+				embed = DiscordEmbed(description='**{}** ({}) has been restricted due to too high pp gain and too brutal ({}pp)'.format(username, userID, s.pp))
+				webhook.add_embed(embed)
+				log.info("CHEATER GOBLOK MASUK DISCORD")
+				webhook.execute()
 
 			# Ci metto la faccia, ci metto la testa e ci metto il mio cuore
 			if ((s.mods & mods.DOUBLETIME) > 0 and (s.mods & mods.HALFTIME) > 0) \
@@ -333,6 +364,13 @@ class handler(requestsManager.asyncRequestHandler):
 			and glob.conf.extra["mode"]["anticheat"]:
 				userUtils.ban(userID)
 				userUtils.appendNotes(userID, "Impossible mod combination {} (score submitter)".format(s.mods))
+				dcnel = glob.conf.config["discord"]["autobanned"]
+				webhook = DiscordWebhook(url=dcnel)
+				embed = DiscordEmbed(title='NEW IDIOT CHEATER DETECTED!!')
+				embed = DiscordEmbed(description='**{}** ({}) has been detected using impossible mod combination {} (score submitter)'.format(username, userID, s.mods))
+				webhook.add_embed(embed)
+				log.info("CHEATER GOBLOK MASUK DISCORD")
+				webhook.execute()
 			elif ((s.mods & mods.DOUBLETIME) > 0 and (s.mods & mods.HALFTIME) > 0) \
 			or ((s.mods & mods.HARDROCK) > 0 and (s.mods & mods.EASY) > 0)\
 			or ((s.mods & mods.RELAX) > 0 and (s.mods & mods.RELAX2) > 0) \

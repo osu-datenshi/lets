@@ -27,6 +27,8 @@ class handler(requestsManager.asyncRequestHandler):
 	@tornado.gen.engine
 	def asyncPost(self):
 		try:
+			return self.write("You want hack more? come fight me")
+			"""
 			if not requestsManager.checkArguments(self.request.arguments, ["user[username]", "user[user_email]", "user[password]", "check"]):
 				return self.write("what are you doing here?")
 			username = self.get_argument("user[username]")
@@ -49,5 +51,6 @@ class handler(requestsManager.asyncRequestHandler):
 			glob.db.execute("INSERT INTO users_stats(id, username, user_color, user_style, ranked_score_std, playcount_std, total_score_std, ranked_score_taiko, playcount_taiko, total_score_taiko, ranked_score_ctb, playcount_ctb, total_score_ctb, ranked_score_mania, playcount_mania, total_score_mania) VALUES (%s, %s, 'black', '', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)", [userID, username])
 			glob.db.execute("INSERT INTO rx_stats(id, username, user_color, user_style, ranked_score_std, playcount_std, total_score_std, ranked_score_taiko, playcount_taiko, total_score_taiko, ranked_score_ctb, playcount_ctb, total_score_ctb, ranked_score_mania, playcount_mania, total_score_mania) VALUES (%s, %s, 'black', '', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)", [userID, username])
 			log.info("{} created their account using ingame registration.".format(username))
+			"""
 		except Exception as e:
 			log.error(e)
