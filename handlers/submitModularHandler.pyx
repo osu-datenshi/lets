@@ -224,8 +224,7 @@ class handler(requestsManager.asyncRequestHandler):
 						userUtils.appendNotes(userID, "Restricted due to too high pp gain ({}pp)".format(s.pp))
 						dcnel = glob.conf.config["discord"]["autobanned"]
 						webhook = DiscordWebhook(url=dcnel)
-						embed = DiscordEmbed(title='NEW IDIOT CHEATER DETECTED!!')
-						embed = DiscordEmbed(description='**{}** ({}) has been restricted due to too high pp gain and too brutal ({}pp)'.format(username, userID, s.pp))
+						embed = DiscordEmbed(title='NEW CHEATER DETECTED!!', description='**{}** ({}) has been restricted due to too high pp gain and too brutal ({}pp)'.format(username, userID, s.pp), color=800000)
 						webhook.add_embed(embed)
 						log.info("CHEATER GOBLOK MASUK DISCORD")
 						webhook.execute()
@@ -235,8 +234,7 @@ class handler(requestsManager.asyncRequestHandler):
 						userUtils.appendNotes(userID, "Restricted due to too high pp gain ({}pp)".format(s.pp))
 						dcnel = glob.conf.config["discord"]["autobanned"]
 						webhook = DiscordWebhook(url=dcnel)
-						embed = DiscordEmbed(title='NEW IDIOT CHEATER DETECTED!!')
-						embed = DiscordEmbed(description='**{}** ({}) has been restricted due to too high pp gain and too brutal ({}pp)'.format(username, userID, s.pp))
+						embed = DiscordEmbed(title='NEW CHEATER DETECTED!!', description='**{}** ({}) has been restricted due to too high pp gain and too brutal ({}pp)'.format(username, userID, s.pp), color=800000)
 						webhook.add_embed(embed)
 						log.info("CHEATER GOBLOK MASUK DISCORD")
 						webhook.execute()
@@ -250,7 +248,13 @@ class handler(requestsManager.asyncRequestHandler):
 				# bmk and bml passed and they are different, restrict the user
 				userUtils.restrict(userID)
 				userUtils.appendNotes(userID, "Restricted due to notepad hack")
-				log.warning("**{}** ({}) has been restricted due to notepad hack".format(username, userID), "cm")
+				log.warning("**{}** ({}) has been restricted due to notepad hack".format(username, userID))
+				dcnel = glob.conf.config["discord"]["autobanned"]
+				webhook = DiscordWebhook(url=dcnel)
+				embed = DiscordEmbed(title='NEW CHEATER DETECTED!!', description='**{}** ({}) has been restricted due to notepad hack'.format(username, userID), color=800000)
+				webhook.add_embed(embed)
+				log.info("CHEATER GOBLOK MASUK DISCORD")
+				webhook.execute()
 				return
 			
 			# Right before submitting the score, get the personal best score object (we need it for charts)
@@ -309,8 +313,7 @@ class handler(requestsManager.asyncRequestHandler):
 				userUtils.appendNotes(userID, "Banned due to negative score (score submitter)")
 				dcnel = glob.conf.config["discord"]["autobanned"]
 				webhook = DiscordWebhook(url=dcnel)
-				embed = DiscordEmbed(title='NEW IDIOT CHEATER DETECTED!!')
-				embed = DiscordEmbed(description='**{}** ({}) has been banned due to negative score (score submitter)'.format(username, userID))
+				embed = DiscordEmbed(title='NEW CHEATER DETECTED!!', description='**{}** ({}) has been banned due to negative score (score submitter)'.format(username, userID), color=800000)
 				webhook.add_embed(embed)
 				log.info("CHEATER GOBLOK MASUK DISCORD")
 				webhook.execute()
@@ -337,8 +340,7 @@ class handler(requestsManager.asyncRequestHandler):
 				userUtils.appendNotes(userID, "Restricted due to too high pp gain and too brutal ({}pp)".format(s.pp))
 				dcnel = glob.conf.config["discord"]["autobanned"]
 				webhook = DiscordWebhook(url=dcnel)
-				embed = DiscordEmbed(title='NEW IDIOT CHEATER DETECTED!!')
-				embed = DiscordEmbed(description='**{}** ({}) has been restricted due to too high pp gain and too brutal ({}pp)'.format(username, userID, s.pp))
+				embed = DiscordEmbed(title='NEW CHEATER DETECTED!!', description='**{}** ({}) has been restricted due to too high pp gain and too brutal ({}pp)'.format(username, userID, s.pp), color=800000)
 				webhook.add_embed(embed)
 				log.info("CHEATER GOBLOK MASUK DISCORD")
 				webhook.execute()
@@ -350,8 +352,7 @@ class handler(requestsManager.asyncRequestHandler):
 				userUtils.appendNotes(userID, "Restricted due to too high pp gain and too brutal ({}pp)".format(s.pp))
 				dcnel = glob.conf.config["discord"]["autobanned"]
 				webhook = DiscordWebhook(url=dcnel)
-				embed = DiscordEmbed(title='NEW IDIOT CHEATER DETECTED!!')
-				embed = DiscordEmbed(description='**{}** ({}) has been restricted due to too high pp gain and too brutal ({}pp)'.format(username, userID, s.pp))
+				embed = DiscordEmbed(title='NEW CHEATER DETECTED!!', description='**{}** ({}) has been restricted due to too high pp gain and too brutal ({}pp)'.format(username, userID, s.pp), color=800000)
 				webhook.add_embed(embed)
 				log.info("CHEATER GOBLOK MASUK DISCORD")
 				webhook.execute()
@@ -428,9 +429,13 @@ class handler(requestsManager.asyncRequestHandler):
 					if not restricted:
 							userUtils.restrict(userID)
 							userUtils.appendNotes(userID, "Restricted due to missing replay while submitting a score.")
-							log.warning("**{}** ({}) has been restricted due to not submitting a replay on map {}.".format(
-								username, userID, s.fileMd5
-							), "cm")
+							log.warning("**{}** ({}) has been restricted due to not submitting a replay on map {}.".format(username, userID, s.fileMd5))
+							dcnel = glob.conf.config["discord"]["autobanned"]
+							webhook = DiscordWebhook(url=dcnel)
+							embed = DiscordEmbed(title='NEW CHEATER DETECTED!!', description='**{}** ({}) has been restricted due to not submitting a replay on map ({})'.format(username, userID, s.fileMd5), color=800000)
+							webhook.add_embed(embed)
+							log.info("CHEATER GOBLOK MASUK DISCORD")
+							webhook.execute()
 
 			# Update beatmap playcount (and passcount)
 			beatmap.incrementPlaycount(s.fileMd5, s.passed)
@@ -666,24 +671,22 @@ class handler(requestsManager.asyncRequestHandler):
 					if UsingRelax:
 						urlweb = glob.conf.config["discord"]["rxscore"]
 						webhook = DiscordWebhook(url=urlweb)
-						embed = DiscordEmbed(title='New score Achieved!!')
-						embed = DiscordEmbed(description='[{}] Achieved #1 on mode **{}**, {} +{}!'.format("RELAX", gameModes.getGamemodeFull(s.gameMode), beatmapInfo.songName.encode().decode("ASCII", "ignore"), ScoreMods))
+						embed = DiscordEmbed(title='New score Achieved!!', description='[{}] Achieved #1 on mode **{}**, {} +{}!'.format("RELAX", gameModes.getGamemodeFull(s.gameMode), beatmapInfo.songName.encode().decode("ASCII", "ignore"), ScoreMods), color=800080)
 						embed.add_embed_field(name='Accuracy: {}%'.format(s.accuracy * 100), value='Combo: {}{}'.format(s.maxCombo, ('/{}'.format(beatmapInfo.maxCombo) if s.gameMode != gameModes.MANIA else '')))
 						embed.add_embed_field(name='Total: {}pp'.format(float("{0:.2f}".format(s.pp))), value='Gained: +{}pp'.format(float("{0:.2f}".format(ppGained))))
 						embed.add_embed_field(name='Played by: {}'.format(username.encode().decode("ASCII", "ignore")), value="[Go to user's profile]({}/rx/u/{})".format(glob.conf.config["server"]["serverurl"], userID))
-						embed.set_image(url='https://assets.ppy.sh/beatmaps/{}/covers/cover.jpg'.format(beatmapInfo.beatmapSetID))
+						embed.set_thumbnail(url='https://b.ppy.sh/thumb/{}.jpg'.format(beatmapInfo.beatmapSetID))
 						webhook.add_embed(embed)
 						log.info("[RELAX] Score masuk ke discord bro")
 						webhook.execute()
 					else:
 						urlweb = glob.conf.config["discord"]["score"]
 						webhook = DiscordWebhook(url=urlweb)
-						embed = DiscordEmbed(title='New score Achieved!!')
-						embed = DiscordEmbed(description='[{}] Achieved #1 on mode **{}**, {} +{}!'.format("VANILLA", gameModes.getGamemodeFull(s.gameMode), beatmapInfo.songName.encode().decode("ASCII", "ignore"), ScoreMods))
+						embed = DiscordEmbed(title='New score Achieved!!', description='[{}] Achieved #1 on mode **{}**, {} +{}!'.format("VANILLA", gameModes.getGamemodeFull(s.gameMode), beatmapInfo.songName.encode().decode("ASCII", "ignore"), ScoreMods), color=800080)
 						embed.add_embed_field(name='Accuracy: {}%'.format(s.accuracy * 100), value='Combo: {}{}'.format(s.maxCombo, ('/{}'.format(beatmapInfo.maxCombo) if s.gameMode != gameModes.MANIA else '')))
 						embed.add_embed_field(name='Total: {}pp'.format(float("{0:.2f}".format(s.pp))), value='Gained: +{}pp'.format(float("{0:.2f}".format(ppGained))))
 						embed.add_embed_field(name='Played by: {}'.format(username.encode().decode("ASCII", "ignore")), value="[Go to user's profile]({}/u/{})".format(glob.conf.config["server"]["serverurl"], userID))
-						embed.set_image(url='https://assets.ppy.sh/beatmaps/{}/covers/cover.jpg'.format(beatmapInfo.beatmapSetID))
+						embed.set_thumbnail(url='https://b.ppy.sh/thumb/{}.jpg'.format(beatmapInfo.beatmapSetID))
 						webhook.add_embed(embed)
 						log.info("[VANILLA] Score masuk ke discord bro")
 						webhook.execute()
