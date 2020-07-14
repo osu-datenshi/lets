@@ -12,42 +12,19 @@ class handler(requestsManager.asyncRequestHandler):
 		self.write("""
 				<html>
 					<head>
-						<style>
-							@import url(https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,700,600,400italic,600italic,700italic,900,900italic);
-							@import url(https://fonts.googleapis.com/css?family=Raleway:400,700);
-							html, body {
-								height: 90%;
-								background-image: url(http://y.zxq.co/xtffuu.png);
-							}
-							.main {
-								height: 100%;
-								width: 100%;
-								display: table;
-							}
-							.wrapper {
-								display: table-cell;
-								height: 90%;
-								vertical-align: middle;
-							}
-							body {
-								font-family: Source Sans Pro;
-								text-align: center;
-							}
-							h1, h2, h3, h4, h5, h6 {
-								font-family: Raleway;
-							}
-						</style>
+						<link href="https://i.datenshi.xyz/static/memez.css" media="all" rel="stylesheet">
+						<link href="https://goverit.troke.id/uikit.css" media="all" rel="stylesheet">
 					</head>
-					<body>
-						<div class = "main">
-							<div class = "wrapper">
-								<a href="https://ripple.moe"><img src="http://y.zxq.co/ufaibw.png"></a>
-								<h3>Howdy, you're still connected to Ripple!</h3>
-								You can't access osu!'s website if the Server Switcher is On.<br>
-								Please open the <b>Server Switcher</b> and click <b>On/Off</b> to switch server, then refresh this page.
-								<h4>If you still can't access osu! website even if the switcher is Off, <a href="http://www.refreshyourcache.com/" target="_blank">clean your browser cache</a>.</h4>
-							</div>
-						</div>
+					<body class="uk-flex uk-flex-column uk-flex-middle uk-flex-between uk-light">
+					<div></div>
+					<div class="uk-flex uk-flex-column uk-flex-middle uk-margin-large-bottom">
+					<img src="https://datenshi.xyz/static/logo.png" class="uk-margin-small-bottom" width="300" height="300">
+					<div class="uk-h1 uk-text-uppercase uk-margin-remove">DATENSHI</div>
+					<div class="uk-h5 uk-text-uppercase uk-margin-remove-bottom">First Indonesian osu! Private Server</div>
+					<div class="uk-h5 uk-text-uppercase uk-margin-remove">Enjoy, Come and Join Us</div>
+					<div class="uk-h5 uk-text-uppercase uk-margin-remove-bottom"><a href="https://link.troke.id/datenshi" target="_blank" class="uk-text-bold">DISCORD</a></div>
+					</div>
+					<div></div>
 					</body>
 				</html>
 				""")
