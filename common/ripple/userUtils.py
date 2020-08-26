@@ -15,6 +15,17 @@ from common.log import logUtils as log
 from common.ripple import passwordUtils, scoreUtils
 from objects import glob
 
+def logUserLog(log, fileMd5, userID, gameMode, scoreid):
+	"""
+	Add some log by user!
+	:param log: Log Message
+	:param fileMd5: MD5File ID of map
+	:param userID: I thinks this easy to know it
+	:param gameMode: GameMode
+	:param scoreid: ScoreID or Play ID
+	"""
+	glob.db.execute(f"INSERT INTO users_logs (user, log, time, game_mode, beatmap_md5, scoreid) VALUES ({userID}, '{log}', {int(time.time())}, {gameMode}, '{fileMd5}', {scoreid})")
+	return True
 
 def getBeatmapTime(beatmapID):
     p = 0

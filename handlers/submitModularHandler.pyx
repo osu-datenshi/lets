@@ -606,6 +606,27 @@ class handler(requestsManager.asyncRequestHandler):
 				# Some debug messages
 				log.debug("Generated output for online ranking screen!")
 				log.debug(output)
+				# TESTING TO USERLOGS
+				if UsingRelax:
+					messages = [
+						f" Achieved #{newScoreboard.personalBestRank} rank with RX on ",
+						"[https://datenshi.xyz/?u={} {}] achieved rank #1 with RX on [https://osu.ppy.sh/b/{} {}] ({})",
+						"{} has lost #1 RX on "
+					]
+				else:
+					messages = [
+						f" Achieved #{newScoreboard.personalBestRank} rank on ",
+						"[https://datenshi.xyz/?u={} {}] achieved rank #1 on [https://osu.ppy.sh/b/{} {}] ({})",
+						"{} has lost #1 on "
+					]
+
+				if s.completed == 3 and restricted == False and beatmapInfo.rankedStatus >= rankedStatuses.RANKED and newScoreboard.personalBestRank > oldPersonalBestRank:
+					if newScoreboard.personalBestRank == 1 and len(newScoreboard.scores) > 2:
+						#woohoo we achieved #1, now we should say to #2 that he sniped!						
+						userUtils.logUserLog(messages[2].format(newScoreboard.scores[2].playerName), s.fileMd5, newScoreboard.scores[2].playerUserID, s.gameMode, s.scoreID)
+
+					userLogMsg = messages[0]
+					userUtils.logUserLog(userLogMsg, s.fileMd5, userID, s.gameMode, s.scoreID)
 
 				# How many PP you got and did you gain any ranks?
 				ppGained = newUserStats["pp"] - oldUserStats["pp"]
