@@ -148,6 +148,8 @@ def readableMods(__mods):
 		r += "HR"
 	if __mods & mods.DOUBLETIME > 0:
 		r += "DT"
+	if __mods & mods.NIGHTCORE > 0:
+		r += "NC"
 	if __mods & mods.HALFTIME > 0:
 		r += "HT"
 	if __mods & mods.FLASHLIGHT > 0:

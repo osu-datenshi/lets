@@ -86,8 +86,6 @@ class piano:
 				hitWindow300 *= 1.5
 			elif scoreMods & mods.HALFTIME != 0:
 				hitWindow300 *= 0.75
-			elif scoreMods & mods.NIGHTCORE != 0:
-				hitWindow300 *= 1.5
 
 			# makes hit window match what it is ingame.
 			hitWindow300 = int(hitWindow300) + 0.5
@@ -95,8 +93,6 @@ class piano:
 				hitWindow300 /= 1.5
 			elif scoreMods & mods.HALFTIME != 0:
 				hitWindow300 /= 0.75
-			elif scoreMods & mods.NIGHTCORE != 0:
-				hitWindow300 /= 1.5
 
 			# Calculate accuracy PP
 			accPP = pow((150.0 / hitWindow300) * pow(accuracy, 16), 1.8) * 2.5
