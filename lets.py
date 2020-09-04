@@ -101,6 +101,8 @@ def make_app():
 		# Not done yet
 		(r"/web/osu-get-beatmap-topic.php", emptyHandler.handler), # Beatmap Topic
 		(r"/web/osu-markasread.php", emptyHandler.handler), # Mark As Read
+		(r"/web/osu-getbeatmapinfo.php", emptyHandler.handler), #new handler
+		(r"/web/osu-getfriends.php", emptyHandler.handler), #newhandler
 		(r"/web/osu-addfavourite.php", emptyHandler.handler), # Add Favorite
 		(r"/web/osu-checktweets.php", emptyHandler.handler), # Do we need this?
 
