@@ -1,11 +1,13 @@
+from urllib.parse import urlencode
+
+import requests
 import tornado.gen
 import tornado.web
 
-from common.sentry import sentry
-from common.web import requestsManager
-from common.web import cheesegull
 from constants import exceptions
+from common.ripple import userUtils
 from common.log import logUtils as log
+from common.web import requestsManager
 
 MODULE_NAME = "direct"
 class handler(requestsManager.asyncRequestHandler):
@@ -14,11 +16,22 @@ class handler(requestsManager.asyncRequestHandler):
 	"""
 	@tornado.web.asynchronous
 	@tornado.gen.engine
-	@sentry.captureTornado
 	def asyncGet(self):
-		output = ""
 		try:
+			args = {}
 			try:
+				# Check user auth because of sneaky people
+				if not requestsManager.checkArguments(self.request.arguments, ["u", "h"]):
+					raise exceptions.invalidArgumentsException(MODULE_NAME)
+				username = self.get_argument("u")
+				password = self.get_argument("h")
+				ip = self.getRequestIP()
+				userID = userUtils.getID(username)
+				#if not userUtils.checkLogin(userID, password):
+				#	raise exceptions.loginFailedException(MODULE_NAME, username)
+				#if userUtils.check2FA(userID, ip):
+				#	raise exceptions.need2FAException(MODULE_NAME, username, ip)
+					
 				# Get arguments
 				gameMode = self.get_argument("m", None)
 				if gameMode is not None:
@@ -37,22 +50,15 @@ class handler(requestsManager.asyncRequestHandler):
 			except ValueError:
 				raise exceptions.invalidArgumentsException(MODULE_NAME)
 
-			# Get data from cheesegull API
-			log.info("Requested osu!direct search: {}".format(query if query != "" else "index"))
-			searchData = cheesegull.getListing(rankedStatus=cheesegull.directToApiStatus(rankedStatus), page=page * 100, gameMode=gameMode, query=query)
-			if searchData is None or searchData is None:
-				raise exceptions.noAPIDataError()
+			# Pass all arguments otherwise it doesn't work
+			for key, _ in self.request.arguments.items():
+				args[key] = self.get_argument(key)
 
-			# Write output
-			output += "999" if len(searchData) == 100 else str(len(searchData))
-			output += "\n"
-			for beatmapSet in searchData:
-				try:
-					output += cheesegull.toDirect(beatmapSet) + "\r\n"
-				except ValueError:
-					# Invalid cheesegull beatmap (empty beatmapset, cheesegull bug? See Sentry #LETS-00-32)
-					pass
-		except (exceptions.noAPIDataError, exceptions.invalidArgumentsException):
-			output = "0\n"
-		finally:
-			self.write(output)
+			# Get data from cheesegull API
+			log.info("{} has requested osu!direct search: {}".format(username, query if query != "" else "index"))
+
+			response = requests.get("http://127.0.0.1:32767/web/osu-search.php?{}".format(urlencode(args)))
+			self.write(response.text)
+		except Exception as e:
+			log.error("search failed: {}".format(e))
+			self.write("")

@@ -1,11 +1,13 @@
+from urllib.parse import urlencode
+
+import requests
 import tornado.gen
 import tornado.web
 
-from common.sentry import sentry
-from common.web import requestsManager
-from common.web import cheesegull
-from common.log import logUtils as log
 from constants import exceptions
+from common.ripple import userUtils
+from common.log import logUtils as log
+from common.web import requestsManager
 
 MODULE_NAME = "direct_np"
 class handler(requestsManager.asyncRequestHandler):
@@ -14,29 +16,30 @@ class handler(requestsManager.asyncRequestHandler):
 	"""
 	@tornado.web.asynchronous
 	@tornado.gen.engine
-	@sentry.captureTornado
 	def asyncGet(self):
-		output = ""
 		try:
-			# Get data by beatmap id or beatmapset id
-			if "b" in self.request.arguments:
-				_id = self.get_argument("b")
-				data = cheesegull.getBeatmap(_id)
-			elif "s" in self.request.arguments:
-				_id = self.get_argument("s")
-				data = cheesegull.getBeatmapSet(_id)
-			else:
+			args = {}
+			try:
+				# Check user auth because of sneaky people
+				if not requestsManager.checkArguments(self.request.arguments, ["u", "h"]):
+					raise exceptions.invalidArgumentsException(MODULE_NAME)
+				username = self.get_argument("u")
+				password = self.get_argument("h")
+				ip = self.getRequestIP()
+				userID = userUtils.getID(username)
+				if not userUtils.checkLogin(userID, password):
+					raise exceptions.loginFailedException(MODULE_NAME, username)
+				if userUtils.check2FA(userID, ip):
+					raise exceptions.need2FAException(MODULE_NAME, username, ip)
+			except ValueError:
 				raise exceptions.invalidArgumentsException(MODULE_NAME)
 
-			log.info("Requested osu!direct np: {}/{}".format("b" if "b" in self.request.arguments else "s", _id))
+			# Pass all arguments otherwise it doesn't work
+			for key, _ in self.request.arguments.items():
+				args[key] = self.get_argument(key)
 
-			# Make sure cheesegull returned some valid data
-			if data is None or len(data) == 0:
-				raise exceptions.osuApiFailException(MODULE_NAME)
-
-			# Write the response
-			output = cheesegull.toDirectNp(data) + "\r\n"
-		except (exceptions.invalidArgumentsException, exceptions.osuApiFailException, KeyError):
-			output = ""
-		finally:
-			self.write(output)
+			response = requests.get("http://127.0.0.1:32767/web/osu-search-set.php?{}".format(urlencode(args)))
+			self.write(response.text)
+		except Exception as e:
+			log.error("search failed: {}".format(e))
+			self.write("")
