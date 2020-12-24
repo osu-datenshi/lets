@@ -29,7 +29,7 @@ def logUserLog(log, fileMd5, userID, gameMode, scoreid):
 
 def getBeatmapTime(beatmapID):
     p = 0
-    r = requests.get("https://storage.datenshi.xyz/api/b/{}".format(beatmapID)).text
+    r = requests.get("https://s.troke.id/api/b/{}".format(beatmapID)).text
     if r != "null\n":
         p = json.loads(r)['TotalLength']
 
@@ -1014,7 +1014,7 @@ def getSilenceEnd(userID):
     return glob.db.fetch("SELECT silence_end FROM users WHERE id = %s LIMIT 1", [userID])["silence_end"]
 
 
-def silence(userID, seconds, silenceReason, author=999):
+def silence(userID, seconds, silenceReason, author=1):
     """
     Silence someone
 
