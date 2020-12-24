@@ -216,7 +216,7 @@ class scoreboardRelax:
 		
 		# We have a score, run the huge query
 		# Base query
-		query = f"""SELECT COUNT(*) AS rank FROM scores_relax 
+		query = """SELECT COUNT(*) AS rank FROM scores_relax 
 		JOIN users ON scores_relax.userid = users.id 
 		JOIN users_stats ON users.id = users_stats.id 
 		WHERE scores_relax.score >= (
