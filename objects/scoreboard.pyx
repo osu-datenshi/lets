@@ -244,7 +244,7 @@ class scoreboard:
 		query += " ORDER BY {} DESC LIMIT 1".format(overwrite)
 		result = glob.db.fetch(query, {"md5": self.beatmap.fileMD5, "userid": self.userID, "mode": self.gameMode, "mods": self.mods})
 		if result is not None:
-			self.personalBestRank = result["rank"]
+			self.personalBestRank = result["ranks"]
 
 	def getScoresData(self):
 		"""
