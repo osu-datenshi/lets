@@ -110,7 +110,7 @@ class scoreboardRelax:
 
 		# Get top 50 scores
 		select = "SELECT *"
-		joins = "FROM scores_relax JOIN users ON scores_relax.userid = users.id JOIN users_stats ON users.id = users_stats.id WHERE scores_relax.beatmap_md5 = %(beatmap_md5)s AND scores_relax.play_mode = %(play_mode)s AND scores_relax.completed = 3 AND (users.privileges & 1 > 0 OR users.id = %(userid)s)"
+		joins = "FROM scores_relax STRAIGHT_JOIN users ON scores_relax.userid = users.id STRAIGHT_JOIN users_stats ON users.id = users_stats.id WHERE scores_relax.beatmap_md5 = %(beatmap_md5)s AND scores_relax.play_mode = %(play_mode)s AND scores_relax.completed = 3 AND (users.privileges & 1 > 0 OR users.id = %(userid)s)"
 
 		# Country ranking
 		if self.country:
@@ -217,10 +217,10 @@ class scoreboardRelax:
 		# We have a score, run the huge query
 		# Base query
 		query = """SELECT COUNT(*) AS ranks FROM scores_relax 
-		JOIN users ON scores_relax.userid = users.id 
-		JOIN users_stats ON users.id = users_stats.id 
-		WHERE scores_relax.score >= (
-				SELECT score FROM scores_relax 
+		STRAIGHT_JOIN users ON scores_relax.userid = users.id 
+		STRAIGHT_JOIN users_stats ON users.id = users_stats.id 
+		WHERE scores_relax.{0} >= (
+				SELECT {0} FROM scores_relax 
 				WHERE beatmap_md5 = %(md5)s 
 				AND play_mode = %(mode)s 
 				AND completed = 3 
@@ -230,7 +230,7 @@ class scoreboardRelax:
 		AND scores_relax.beatmap_md5 = %(md5)s 
 		AND scores_relax.play_mode = %(mode)s 
 		AND scores_relax.completed = 3 
-		AND users.privileges & 1 > 0"""
+		AND users.privileges & 1 > 0""".format(overwrite)
 		# Country
 		if self.country:
 			query += " AND users_stats.country = (SELECT country FROM users_stats WHERE id = %(userid)s LIMIT 1)"
