@@ -72,7 +72,7 @@ class connectionsPool:
 		"""
 		db = MySQLdb.connect(
 			*self.config,
-			port=12020,
+			#port=12020, INI JUGA BOSKU JANGAN LUPA
 			autocommit=True,
 			charset="utf8",
 			use_unicode=True
