@@ -610,13 +610,13 @@ class handler(requestsManager.asyncRequestHandler):
 				if UsingRelax:
 					messages = [
 						f" Achieved #{newScoreboard.personalBestRank} rank with RX on ",
-						"[https://datenshi.xyz/?u={} {}] achieved rank #1 with RX on [https://osu.ppy.sh/b/{} {}] ({})",
+						"[https://osu.troke.id/?u={} {}] achieved rank #1 with RX on [https://osu.ppy.sh/b/{} {}] ({})",
 						"{} has lost #1 RX on "
 					]
 				else:
 					messages = [
 						f" Achieved #{newScoreboard.personalBestRank} rank on ",
-						"[https://datenshi.xyz/?u={} {}] achieved rank #1 on [https://osu.ppy.sh/b/{} {}] ({})",
+						"[https://osu.troke.id/?u={} {}] achieved rank #1 on [https://osu.ppy.sh/b/{} {}] ({})",
 						"{} has lost #1 on "
 					]
 

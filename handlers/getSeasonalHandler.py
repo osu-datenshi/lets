@@ -13,7 +13,7 @@ class handler(requestsManager.asyncRequestHandler):
 	@tornado.gen.engine
 	def asyncGet(self):
 		try:
-			response = requests.get("https://old.datenshi.xyz/seasonal.php")
+			response = requests.get("https://cdn.troke.id/seasonal.json")
 			self.write(response.text)
 		except Exception as e:
 			log.error("check-seasonal failed: {}".format(e))
