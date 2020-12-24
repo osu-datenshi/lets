@@ -216,8 +216,8 @@ class scoreboardRelax:
 		
 		# We have a score, run the huge query
 		# Base query
-		query = """SELECT COUNT(*) AS rank FROM scores_relax JOIN users ON scores_relax.userid = users.id JOIN users_stats ON users.id = users_stats.id WHERE scores_relax.{0} >= (
-		SELECT {0} FROM scores_relax WHERE beatmap_md5 = %(md5)s AND play_mode = %(mode)s AND completed = 3 AND userid = %(userid)s LIMIT 1
+		query = """SELECT COUNT(*) AS rank FROM scores_relax JOIN users ON scores_relax.userid = users.id JOIN users_stats ON users.id = users_stats.id WHERE scores_relax.score >= (
+		SELECT score FROM scores_relax WHERE beatmap_md5 = %(md5)s AND play_mode = %(mode)s AND completed = 3 AND userid = %(userid)s LIMIT 1
 		) AND scores_relax.beatmap_md5 = %(md5)s AND scores_relax.play_mode = %(mode)s AND scores_relax.completed = 3 AND users.privileges & 1 > 0""".format(overwrite)
 		# Country
 		if self.country:
