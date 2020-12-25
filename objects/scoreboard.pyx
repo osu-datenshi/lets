@@ -216,7 +216,7 @@ class scoreboard:
 		
 		# We have a score, run the huge query
 		# Base query
-		query = """SELECT COUNT(*) AS ranks FROM scores 
+		query = """SELECT COUNT(*) AS rank FROM scores 
 		STRAIGHT_JOIN users ON scores.userid = users.id 
 		STRAIGHT_JOIN users_stats ON users.id = users_stats.id 
 		WHERE scores.{0} >= (
@@ -244,7 +244,7 @@ class scoreboard:
 		query += " ORDER BY {} DESC LIMIT 1".format(overwrite)
 		result = glob.db.fetch(query, {"md5": self.beatmap.fileMD5, "userid": self.userID, "mode": self.gameMode, "mods": self.mods})
 		if result is not None:
-			self.personalBestRank = result["ranks"]
+			self.personalBestRank = result["rank"]
 
 	def getScoresData(self):
 		"""
