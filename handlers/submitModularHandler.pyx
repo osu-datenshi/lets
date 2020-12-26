@@ -208,36 +208,100 @@ class handler(requestsManager.asyncRequestHandler):
 				log.error("Caught an exception in pp calculation, re-raising after saving score in db")
 				s.pp = 0
 				midPPCalcException = e
-
+			
+			# Send message
+			def send_bot_message(msg):
+				safe_user = username.encode().decode("ASCII", "ignore")
+				alert = "{}, {}".format(safe_user, message)
+				params = urlencode({"k": glob.conf.config["server"]["apikey"], "to": safe_user, "msg": alert})
+				requests.get("{}/api/v1/fokabotMessage?{}".format(glob.conf.config["server"]["banchourl"], params))
+			
+			# Do Restrict
+			def do_restrict(reason, note=None, warnlog=None):
+				userUtils.restrict(userID)
+				if note:
+					userUtils.appendNotes(userID, note)
+				if warnlog:
+					log.warning(warnlog)
+				if glob.conf.config["discord"]["enable"]:
+					dcnel = glob.conf.config["discord"]["autobanned"]
+					webhook = DiscordWebhook(url=dcnel)
+					embed = DiscordEmbed(title='NEW CHEATER DETECTED!!', description=reason, color=16711680)
+					webhook.add_embed(embed)
+					webhook.execute()
+				log.info("CHEATER GOBLOK MASUK DISCORD")
+			
+			# Do Ban
+			def do_ban():
+				pass
+			
+			# Given a current player statistics
+			# Calculate maximum obtainable PP by player. This will allow proper progression of respective player.
+			def calculate_limit(limiter, stat):
+				# Define a simple scoring with easing to control acceleration towards maximum value.
+				def determine_score(value, low, high, ease):
+					if value < low:
+						return 0
+					elif value > high:
+						return 1
+					return ((value - low) / (high - low)) ** ease
+				
+				pp_limits = (limiter[0], limiter[1])
+				# format (low, hi, ease%)
+				play_count_limits = tuple(limiter[2])
+				total_pp_limits   = tuple(limiter[3])
+				# scoring
+				weight_pc, weight_pp = (limiter[4], limiter[5])
+				score_pc, score_pp = determine_score(stat.playcount, *play_count_limits), determine_score(stat.pp, *total_pp_limits)
+				total_score = score_pc * weight_pc + score_pp * weight_pp
+				log.info("PP Limit Score: {}/{}".format(int(total_score), weight_pc + weight_pp))
+				return pp_limits[0] + int((pp_limits[1] - pp_limits[0]) * (total_score / (weight_pc + weight_pp)))
+			
 			# Restrict obvious cheaters
+			variable_pp_limit = glob.conf.extra['lets']['submit'].fetch('tolerant-pp-limit',False)
+			is_fullmod = bool( (s.mods & (mods.DOUBLETIME | mods.NIGHTCORE)) and (s.mods & mods.FLASHLIGHT) and (s.mods & mods.HARDROCK) and (s.mods & mods.HIDDEN) )
+			var_fullmod = glob.conf.extra['lets']['submit'].fetch('tolerant-fullmod',False)
 			if not restricted:
-				rx_pp = glob.conf.extra["lets"]["submit"]["max-std-pp"]
-				oof_pp = glob.conf.extra["lets"]["submit"]["max-vanilla-pp"]
+				# Check eligiblity of Variable Limiter
+				# - it'll go as is, if it's not FULLMOD
+				# - if it's FULLMOD, should check if VARIABLE_FULLMOD is on or not.
+				variable_pp_limit = (is_fullmod and var_fullmod) if is_fullmod else variable_pp_limit
+                                if variable_pp_limit:
+					if UsingRelax:
+						limiter = glob.conf.extra["lets"]["submit"]["max-relax-pp-formula"]
+						current_stats = userUtils.getUserStatsRx(userID, s.gameMode)
+					else:
+						limiter = glob.conf.extra["lets"]["submit"]["max-vanilla-pp-formula"]
+						current_stats = userUtils.getUserStats(userID, s.gameMode)
+					
+					# if FULLMOD, then check if the limiter specific setting existed for it, otherwise use current one
+					if is_fullmod:
+						limiter = glob.conf.extra["lets"]["submit"]["max-fullmod-pp-formula"] or limiter
+					limit_pp = calculate_limit(limiter, current_stats)
+				else:
+					rx_pp = glob.conf.extra["lets"]["submit"]["max-std-pp"]
+					dead_pp = glob.conf.extra["lets"]["submit"]["max-vanilla-pp"]
+					fullmod_pp = glob.conf.extra["lets"]["submit"].fetch("max-fullmod-pp", 1000)
+					limit_pp = fullmod_pp if is_fullmod else (rx_pp if UsingRelax else dead_pp)
 				
 				relax = 1 if used_mods & 128 else 0
 				
 				unrestricted_user = userUtils.noPPLimit(userID, relax)
+				null_over_pp = glob.conf.extra['lets']['submit'].fetch('null-over-pp',False)
 				
-				if UsingRelax: 
-					if (s.pp >= rx_pp and s.gameMode == gameModes.STD) and not unrestricted_user and not glob.conf.extra["mode"]["no-pp-cap"]:
-						userUtils.restrict(userID)
-						userUtils.appendNotes(userID, "Restricted due to too high pp gain ({}pp)".format(s.pp))
-						dcnel = glob.conf.config["discord"]["autobanned"]
-						webhook = DiscordWebhook(url=dcnel)
-						embed = DiscordEmbed(title='NEW CHEATER DETECTED!!', description='**{}** ({}) has been restricted due to too high pp gain and too brutal ({}pp)'.format(username, userID, s.pp), color=16711680)
-						webhook.add_embed(embed)
-						log.info("CHEATER GOBLOK MASUK DISCORD")
-						webhook.execute()
-				else:
-					if (s.pp >= oof_pp and s.gameMode == gameModes.STD) and not unrestricted_user and not glob.conf.extra["mode"]["no-pp-cap"]:
-						userUtils.restrict(userID)
-						userUtils.appendNotes(userID, "Restricted due to too high pp gain ({}pp)".format(s.pp))
-						dcnel = glob.conf.config["discord"]["autobanned"]
-						webhook = DiscordWebhook(url=dcnel)
-						embed = DiscordEmbed(title='NEW CHEATER DETECTED!!', description='**{}** ({}) has been restricted due to too high pp gain and too brutal ({}pp)'.format(username, userID, s.pp), color=16711680)
-						webhook.add_embed(embed)
-						log.info("CHEATER GOBLOK MASUK DISCORD")
-						webhook.execute()
+				if (s.pp >= limit_pp and s.gameMode == gameModes.STD) and not unrestricted_user and not glob.conf.extra["mode"]["no-pp-cap"]:
+					if null_over_pp:
+						# forgive the user but nullify the PP gain for this run.
+						s.pp = 0
+						if variable_pp_limit:
+							warning_message = "looks like your PP gain for this play is over than what you should be able to. Please try again later once you've gained enough PP."
+						elif is_fullmod and not var_fullmod:
+							warning_message = "looks like your PP gain is too high. This score won't yield PP."
+						else:
+							warning_message = "looks like your PP gain is too high. This score won't yield PP."
+						send_bot_message(warning_message)
+					else:
+						do_restrict('**{}** ({}) has been restricted due to too high pp gain and too brutal ({}pp)'.format(username, userID, s.pp), note="Restricted due to too high pp gain ({}pp)".format(s.pp))
 
 			# Check notepad hack
 			if bmk is None and bml is None:
@@ -246,15 +310,9 @@ class handler(requestsManager.asyncRequestHandler):
 				pass
 			elif bmk != bml and not restricted:
 				# bmk and bml passed and they are different, restrict the user
-				userUtils.restrict(userID)
-				userUtils.appendNotes(userID, "Restricted due to notepad hack")
-				log.warning("**{}** ({}) has been restricted due to notepad hack".format(username, userID))
-				dcnel = glob.conf.config["discord"]["autobanned"]
-				webhook = DiscordWebhook(url=dcnel)
-				embed = DiscordEmbed(title='NEW CHEATER DETECTED!!', description='**{}** ({}) has been restricted due to notepad hack'.format(username, userID), color=16711680)
-				webhook.add_embed(embed)
-				log.info("CHEATER GOBLOK MASUK DISCORD")
-				webhook.execute()
+				do_restrict('**{}** ({}) has been restricted due to notepad hack'.format(username, userID), \
+					note="Restricted due to notepad hack", \
+					warnlog="**{}** ({}) has been restricted due to notepad hack".format(username, userID))
 				return
 			
 			# Right before submitting the score, get the personal best score object (we need it for charts)
@@ -285,13 +343,13 @@ class handler(requestsManager.asyncRequestHandler):
 					hack = getHackByFlag(int(haxFlags))
 					if type(hack) == str:
 						# THOT DETECTED
-						if glob.conf.config["discord"]["enable"] == True:
+						if glob.conf.config["discord"]["enable"]:
 							webhook = DiscordWebhook(url=glob.conf.config["discord"]["ahook"])
 							embed = DiscordEmbed(title='This is worst cheater', color=242424)
 							embed = DiscordEmbed(name='Catched some cheater {username} ({userID})')
 							embed = DiscordEmbed(description='This body catched with flag {haxFlags}\nIn enuming: {hack}')
 
-							if glob.conf.extra["mode"]["anticheat"] == True:
+							if glob.conf.extra["mode"]["anticheat"]:
 								webhook.add_embed(embed)
 								webhook.execute()
 
@@ -307,80 +365,67 @@ class handler(requestsManager.asyncRequestHandler):
 				log.warning("**{}** ({}) has been restricted due clientside anti cheat flag **({})**".format(username, userID, haxFlags), "cm")
 			'''
 
-			# สวัสดีฮะ ผมเต้เอ็กเซนไฟไหม้
-			if s.score < 0 or s.score > (2 ** 63) - 1 and glob.conf.extra["mode"]["anticheat"]:
-				userUtils.ban(userID)
-				userUtils.appendNotes(userID, "Banned due to negative score (score submitter)")
-				dcnel = glob.conf.config["discord"]["autobanned"]
-				webhook = DiscordWebhook(url=dcnel)
-				embed = DiscordEmbed(title='NEW CHEATER DETECTED!!', description='**{}** ({}) has been banned due to negative score (score submitter)'.format(username, userID), color=16711680)
-				webhook.add_embed(embed)
-				log.info("CHEATER GOBLOK MASUK DISCORD")
-				webhook.execute()
-			elif s.score < 0 or s.score > (2 ** 63) - 1 and not glob.conf.extra["mode"]["anticheat"]:
-				alert = "{}, seems like you've exceed the score limit (INT32) or your score is negative, this score won't submit for you.".format(username.encode().decode("ASCII", "ignore"))
-				params = urlencode({"k": glob.conf.config["server"]["apikey"], "to": username.encode().decode("ASCII", "ignore"), "msg": alert})
-				requests.get("{}/api/v1/fokabotMessage?{}".format(glob.conf.config["server"]["banchourl"], params))
+			# bad integer score
+			int64_max = (1 << 63) - 1
+			norm_max  = 1000000
+			if s.score < 0 or s.score > int64_max:
+				if glob.conf.extra["mode"]["anticheat"]:
+					userUtils.ban(userID)
+					userUtils.appendNotes(userID, "Banned due to negative score (score submitter)")
+					dcnel = glob.conf.config["discord"]["autobanned"]
+					webhook = DiscordWebhook(url=dcnel)
+					embed = DiscordEmbed(title='NEW CHEATER DETECTED!!', description='**{}** ({}) has been banned due to negative score (score submitter)'.format(username, userID), color=16711680)
+					webhook.add_embed(embed)
+					log.info("CHEATER GOBLOK MASUK DISCORD")
+					webhook.execute()
+				else:
+					send_bot_message("seems like you've submitted an invalid score value, this score won't submit for you.")
 				return
 
 			# Make sure the score is not memed
-			if s.gameMode == gameModes.MANIA and s.score > 1000000:
-				userUtils.ban(userID)
-				userUtils.appendNotes(userID, "Banned due to mania score > 1000000 (score submitter)")
-			elif s.gameMode == gameModes.MANIA and s.score > 1000000 and not glob.conf.extra["mode"]["anticheat"]:
-				alert = "{}, seems like you've exceed osu!Mania score limit (1000000), this score won't submit for you.".format(username.encode().decode("ASCII", "ignore"))
-				params = urlencode({"k": glob.conf.config["server"]["apikey"], "to": username.encode().decode("ASCII", "ignore"), "msg": alert})
-				requests.get("{}/api/v1/fokabotMessage?{}".format(glob.conf.config["server"]["banchourl"], params))
+			if s.gameMode == gameModes.MANIA and s.score > norm_max:
+				if glob.conf.extra["mode"]["anticheat"]:
+					userUtils.ban(userID)
+					userUtils.appendNotes(userID, "Banned due to mania score > 1000000 (score submitter)")
+				else:
+					send_bot_message("seems like you've exceed osu!mania score limit (1000000), this score won't submit for you.")
 				return
-
-			if ((s.mods & mods.DOUBLETIME) > 0 and (s.mods & mods.FLASHLIGHT) > 0) \
-			and ((s.mods & mods.HARDROCK) > 0 and (s.mods & mods.HIDDEN) > 0) and s.pp > 1000 \
-			and glob.conf.extra["mode"]["anticheat"]:
-				userUtils.restrict(userID)
-				userUtils.appendNotes(userID, "Restricted due to too high pp gain and too brutal ({}pp)".format(s.pp))
-				dcnel = glob.conf.config["discord"]["autobanned"]
-				webhook = DiscordWebhook(url=dcnel)
-				embed = DiscordEmbed(title='NEW CHEATER DETECTED!!', description='**{}** ({}) has been restricted due to too high pp gain and too brutal ({}pp)'.format(username, userID, s.pp), color=16711680)
-				webhook.add_embed(embed)
-				log.info("CHEATER GOBLOK MASUK DISCORD")
-				webhook.execute()
-				
-			elif ((s.mods & mods.NIGHTCORE) > 0 and (s.mods & mods.FLASHLIGHT) > 0) \
-			and ((s.mods & mods.HARDROCK) > 0 and (s.mods & mods.HIDDEN) > 0) and s.pp > 1000 \
-			and glob.conf.extra["mode"]["anticheat"]:
-				userUtils.restrict(userID)
-				userUtils.appendNotes(userID, "Restricted due to too high pp gain and too brutal ({}pp)".format(s.pp))
-				dcnel = glob.conf.config["discord"]["autobanned"]
-				webhook = DiscordWebhook(url=dcnel)
-				embed = DiscordEmbed(title='NEW CHEATER DETECTED!!', description='**{}** ({}) has been restricted due to too high pp gain and too brutal ({}pp)'.format(username, userID, s.pp), color=16711680)
-				webhook.add_embed(embed)
-				log.info("CHEATER GOBLOK MASUK DISCORD")
-				webhook.execute()
-
+			
+			def impossible_mods():
+				# Impossible Flags
+				# - DT/NC and HT together
+				# - HR and EM together
+				# - Fail Control Mods are toggled exclusively (SD/PF and NF, SD/PF and RL/ATP, NF and RL/ATP)
+				# - Relax variant are toggled exclusively (RL and ATP)
+				time_control = (s.mods & (mods.DOUBLETIME | mods.NIGHTCORE), s.mods & mods.HALFTIME)
+				fail_control = (s.mods & (mods.SUDDENDEATH | mods.PERFECT), s.mods & mods.NOFAIL, s.mods & mods.RELAX, s.mods & mods.RELAX2)
+				key_control = [(s.mods & (1 << kt)) for kt in [15,16,17,18,19,24,26,27,28]]
+				all_controls = [time_control, fail_control, key_control]
+				over_controls = False
+				for ctrl in all_controls:
+					if over_controls:
+						break
+					over_controls = over_controls or len(filter(bool, ctrl) > 1)
+				return False or \
+					((s.mods & mods.HARDROCK) and (s.mods & mods.EASY)) or \
+					over_controls or \
+					False
+			
 			# Ci metto la faccia, ci metto la testa e ci metto il mio cuore
-			if ((s.mods & mods.DOUBLETIME) > 0 and (s.mods & mods.HALFTIME) > 0) \
-			or ((s.mods & mods.HARDROCK) > 0 and (s.mods & mods.EASY) > 0)\
-			or ((s.mods & mods.RELAX) > 0 and (s.mods & mods.RELAX2) > 0) \
-			or ((s.mods & mods.SUDDENDEATH) > 0 and (s.mods & mods.NOFAIL) > 0) \
-			and glob.conf.extra["mode"]["anticheat"]:
-				userUtils.ban(userID)
-				userUtils.appendNotes(userID, "Impossible mod combination {} (score submitter)".format(s.mods))
-				dcnel = glob.conf.config["discord"]["autobanned"]
-				webhook = DiscordWebhook(url=dcnel)
-				embed = DiscordEmbed(title='NEW IDIOT CHEATER DETECTED!!')
-				embed = DiscordEmbed(description='**{}** ({}) has been detected using impossible mod combination {} (score submitter)'.format(username, userID, s.mods))
-				webhook.add_embed(embed)
-				log.info("CHEATER GOBLOK MASUK DISCORD")
-				webhook.execute()
-			elif ((s.mods & mods.DOUBLETIME) > 0 and (s.mods & mods.HALFTIME) > 0) \
-			or ((s.mods & mods.HARDROCK) > 0 and (s.mods & mods.EASY) > 0)\
-			or ((s.mods & mods.RELAX) > 0 and (s.mods & mods.RELAX2) > 0) \
-			or ((s.mods & mods.SUDDENDEATH) > 0 and (s.mods & mods.NOFAIL) > 0) \
-			and not glob.conf.extra["mode"]["anticheat"]:
-				alert = "{}, seems like you've used osu! score submitter limit (Impossible mod combination), this score won't submit for you.".format(username.encode().decode("ASCII", "ignore"))
-				params = urlencode({"k": glob.conf.config["server"]["apikey"], "to": username.encode().decode("ASCII", "ignore"), "msg": alert})
-				requests.get("{}/api/v1/fokabotMessage?{}".format(glob.conf.config["server"]["banchourl"], params))
-				return
+			if impossible_mods():
+				if glob.conf.extra["mode"]["anticheat"]:
+					userUtils.ban(userID)
+					userUtils.appendNotes(userID, "Impossible mod combination {} (score submitter)".format(s.mods))
+					dcnel = glob.conf.config["discord"]["autobanned"]
+					webhook = DiscordWebhook(url=dcnel)
+					embed = DiscordEmbed(title='NEW IDIOT CHEATER DETECTED!!')
+					embed = DiscordEmbed(description='**{}** ({}) has been detected using impossible mod combination {} (score submitter)'.format(username, userID, s.mods))
+					webhook.add_embed(embed)
+					log.info("CHEATER GOBLOK MASUK DISCORD")
+					webhook.execute()
+				else:
+					send_bot_message("seems like you've used osu! score submitter limit (Impossible mod combination), this score won't submit for you.")
+					return
 
 			# NOTE: Process logging was removed from the client starting from 20180322
 			if s.completed == 3 and "pl" in self.request.arguments:
@@ -427,15 +472,11 @@ class handler(requestsManager.asyncRequestHandler):
 				else:
 					# Restrict if no replay was provided
 					if not restricted:
-							userUtils.restrict(userID)
-							userUtils.appendNotes(userID, "Restricted due to missing replay while submitting a score.")
-							log.warning("**{}** ({}) has been restricted due to not submitting a replay on map {}.".format(username, userID, s.fileMd5))
-							dcnel = glob.conf.config["discord"]["autobanned"]
-							webhook = DiscordWebhook(url=dcnel)
-							embed = DiscordEmbed(title='NEW CHEATER DETECTED!!', description='**{}** ({}) has been restricted due to not submitting a replay on map ({})'.format(username, userID, s.fileMd5), color=16711680)
-							webhook.add_embed(embed)
-							log.info("CHEATER GOBLOK MASUK DISCORD")
-							webhook.execute()
+						do_restrict(
+							'**{}** ({}) has been restricted due to not submitting a replay on map ({})'.format(username, userID, s.fileMd5),
+							note="Restricted due to missing replay while submitting a score.", \
+							warnlog="**{}** ({}) has been restricted due to not submitting a replay on map {}.".format(username, userID, s.fileMd5) \
+						)
 
 			# Update beatmap playcount (and passcount)
 			beatmap.incrementPlaycount(s.fileMd5, s.passed)
@@ -663,29 +704,29 @@ class handler(requestsManager.asyncRequestHandler):
 					ScoreMods = ""
 					if s.mods == 0:
 						ScoreMods += "NM"
-					if s.mods & mods.NOFAIL > 0:
+					if s.mods & mods.NOFAIL:
 						ScoreMods += "NF"
-					if s.mods & mods.EASY > 0:
+					if s.mods & mods.EASY:
 						ScoreMods += "EZ"
-					if s.mods & mods.HIDDEN > 0:
+					if s.mods & mods.HIDDEN:
 						ScoreMods += "HD"
-					if s.mods & mods.HARDROCK > 0:
+					if s.mods & mods.HARDROCK:
 						ScoreMods += "HR"
-					if s.mods & mods.DOUBLETIME > 0:
+					if s.mods & mods.DOUBLETIME:
 						ScoreMods += "DT"
-					if s.mods & mods.NIGHTCORE > 0:
+					if s.mods & mods.NIGHTCORE:
 						ScoreMods += "NC"
-					if s.mods & mods.HALFTIME > 0:
+					if s.mods & mods.HALFTIME:
 						ScoreMods += "HT"
-					if s.mods & mods.FLASHLIGHT > 0:
+					if s.mods & mods.FLASHLIGHT:
 						ScoreMods += "FL"
-					if s.mods & mods.SPUNOUT > 0:
+					if s.mods & mods.SPUNOUT:
 						ScoreMods += "SO"
-					if s.mods & mods.TOUCHSCREEN > 0:
+					if s.mods & mods.TOUCHSCREEN:
 						ScoreMods += "TD"
-					if s.mods & mods.RELAX > 0:
+					if s.mods & mods.RELAX:
 						ScoreMods += "RX"
-					if s.mods & mods.RELAX2 > 0:
+					if s.mods & mods.RELAX2:
 						ScoreMods += "AP"
 
 					# Second, get the webhook link from config
