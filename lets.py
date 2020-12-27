@@ -315,7 +315,7 @@ if __name__ == "__main__":
 				except:
 					consoleHelper.printColored("not ok", bcolors.RED)
 
-		schedule.every(1).hour.do(ping)
+		schedule.every(10).seconds.do(ping)
 
 		use_threading = True
 		if use_threading:
