@@ -1,7 +1,17 @@
-def ping()
-    # PING
+import schedule
+import time
+
+def ping():
+	# PING
 	try:
 		glob.db.execute("SELECT 1+1")
-        consoleHelper.printColored("the command has been execute!", bcolors.GREEN)
+		print("ok")
 	except:
-		consoleHelper.printColored("command not working", bcolors.RED)
+		print("not ok")
+
+schedule.every(10).seconds.do(ping)
+
+while True:
+		schedule.run_pending()
+		time.sleep(1)
+		print("ok")

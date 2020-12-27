@@ -329,6 +329,6 @@ def ping():
 schedule.every(10).seconds.do(ping)
 
 while True:
-		schedule.run_continously()
+		schedule.run_pending()
 		time.sleep(1)
 		consoleHelper.printColored("sucess running", bcolors.GREEN)
