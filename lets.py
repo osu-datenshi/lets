@@ -312,6 +312,8 @@ if __name__ == "__main__":
 				try:
 					glob.db.execute("SELECT 1+1")
 					consoleHelper.printColored("the command has been execute!", bcolors.GREEN)
+				except:
+					consoleHelper.printColored("not ok", bcolors.RED)
 
 		schedule.every(1).hour.do(ping)
 
@@ -321,16 +323,16 @@ if __name__ == "__main__":
 
 			schedule_thread = threading.Event()
 
-        	class ScheduleThread(threading.Thread):
-            	@classmethod
-            	def run(cls):
-                	while not schedule_thread.is_set():
-                    	consoleHelper.printColored("ok", bcolors.GREEN)
+			class ScheduleThread(threading.Thread):
+				@classmethod
+				def run(cls):
+					while not schedule_thread.is_set():
+						consoleHelper.printColored("ok", bcolors.GREEN)
 						schedule.default_scheduler.run_pending()
-                    	time.sleep(0.5)
+						time.sleep(0.5)
 
-        	continuous_thread = ScheduleThread()
-        	continuous_thread.start()
+			continuous_thread = ScheduleThread()
+			continuous_thread.start()
 			while True:
 				time.sleep(0.1)
 		else:
