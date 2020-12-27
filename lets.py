@@ -316,7 +316,7 @@ if __name__ == "__main__":
 					consoleHelper.printColored("not ok", bcolors.RED)
 
 		schedule.every(1).hour.do(ping)
-		"""
+
 		use_threading = True
 		if use_threading:
 			import threading
@@ -333,14 +333,12 @@ if __name__ == "__main__":
 
 			continuous_thread = ScheduleThread()
 			continuous_thread.start()
-			while True:
-				time.sleep(0.1)
 		else:
 			while True:
 				consoleHelper.printColored("ok", bcolors.GREEN)
 				schedule.run_pending()
 				time.sleep(0.5)
-		"""
+
 		# Start Tornado
 		glob.application.listen(serverPort, address=glob.conf.config["server"]["host"])
 		tornado.ioloop.IOLoop.instance().start()
