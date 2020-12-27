@@ -327,7 +327,7 @@ if __name__ == "__main__":
 				@classmethod
 				def run(cls):
 					while not schedule_thread.is_set():
-						consoleHelper.printColored("ok", bcolors.GREEN)
+						consoleHelper.printColored("ok brooooooooo", bcolors.GREEN)
 						schedule.default_scheduler.run_pending()
 						time.sleep(0.5)
 
