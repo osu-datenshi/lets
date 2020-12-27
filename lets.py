@@ -250,6 +250,20 @@ if __name__ == "__main__":
 			)
 			sys.exit()
 		consoleHelper.printDone()
+		
+		def ping():
+				try:
+					glob.db.execute("SELECT 1+1")
+					consoleHelper.printColored("the command has been execute!", bcolors.GREEN)
+				except:
+					consoleHelper.printColored("command not working", bcolors.RED)
+
+		schedule.every(10).seconds.do(ping)
+
+		while True:
+				schedule.run_pending()
+				time.sleep(1)
+				consoleHelper.printColored("sucess running", bcolors.GREEN)
 
 		# Set achievements version
 		glob.redis.set("lets:achievements_version", glob.ACHIEVEMENTS_VERSION)
@@ -317,18 +331,3 @@ if __name__ == "__main__":
 		print("> Disposing server... ")
 		glob.fileBuffers.flushAll()
 		consoleHelper.printColored("Goodbye!", bcolors.GREEN)
-
-def ping():
-	# PING
-	try:
-		glob.db.execute("SELECT 1+1")
-		consoleHelper.printColored("the command has been execute!", bcolors.GREEN)
-	except:
-		consoleHelper.printColored("command not working", bcolors.RED)
-
-schedule.every(10).seconds.do(ping)
-
-while True:
-		schedule.run_pending()
-		time.sleep(1)
-		consoleHelper.printColored("sucess running", bcolors.GREEN)
