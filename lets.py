@@ -319,15 +319,15 @@ if __name__ == "__main__":
 		consoleHelper.printColored("Goodbye!", bcolors.GREEN)
 
 def ping():
-    # PING
+	# PING
 	try:
 		glob.db.execute("SELECT 1+1")
-    	consoleHelper.printColored("the command has been execute!", bcolors.GREEN)
+		consoleHelper.printColored("the command has been execute!", bcolors.GREEN)
 	except:
 		consoleHelper.printColored("command not working", bcolors.RED)
 
-	schedule.every(10).seconds.do(ping)
+		schedule.every(10).seconds.do(ping)
 
 while True:
-	scheduler.run_continously()
-	time.sleep(1)
+		scheduler.run_continously()
+		time.sleep(1)
