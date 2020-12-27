@@ -1,6 +1,8 @@
 # General imports
 import os
 import sys
+import schedule
+import time
 from multiprocessing.pool import ThreadPool
 
 import tornado.gen
@@ -275,13 +277,6 @@ if __name__ == "__main__":
 		except:
 			consoleHelper.printColored("[!] Invalid server port! Please check your config.ini and run the server again", bcolors.RED)
 
-		# DB ping
-		try:
-			glob.db.execute("SELECT 1+1")
-			consoleHelper.printColored("the command has been execute!", bcolors.GREEN)
-		except:
-			consoleHelper.printColored("command not working", bcolors.RED)
-
 		# Make app
 		glob.application = make_app()
 
@@ -322,3 +317,17 @@ if __name__ == "__main__":
 		print("> Disposing server... ")
 		glob.fileBuffers.flushAll()
 		consoleHelper.printColored("Goodbye!", bcolors.GREEN)
+
+def ping():
+    # PING
+	try:
+		glob.db.execute("SELECT 1+1")
+        consoleHelper.printColored("the command has been execute!", bcolors.GREEN)
+	except:
+		consoleHelper.printColored("command not working", bcolors.RED)
+
+	schedule.every(10).seconds.do(ping)
+
+while True:
+	scheduler.run_continously()
+	time.sleep(1)
