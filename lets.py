@@ -308,9 +308,6 @@ if __name__ == "__main__":
 		consoleHelper.printColored("> L.E.T.S. is listening for clients on {}:{}...".format(glob.conf.config["server"]["host"], serverPort), bcolors.GREEN)
 		log.logMessage("Server started!", discord="bunker", stdout=False)
 
-		# Start Tornado
-		glob.application.listen(serverPort, address=glob.conf.config["server"]["host"])
-		tornado.ioloop.IOLoop.instance().start()
 		def ping():
 				try:
 					glob.db.execute("SELECT 1+1")
@@ -324,6 +321,10 @@ if __name__ == "__main__":
 				schedule.run_pending()
 				time.sleep(1)
 				consoleHelper.printColored("sucess running", bcolors.GREEN)
+
+		# Start Tornado
+		glob.application.listen(serverPort, address=glob.conf.config["server"]["host"])
+		tornado.ioloop.IOLoop.instance().start()
 
 	finally:
 		# Perform some clean up
