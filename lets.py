@@ -277,6 +277,14 @@ if __name__ == "__main__":
 		except:
 			consoleHelper.printColored("[!] Invalid server port! Please check your config.ini and run the server again", bcolors.RED)
 
+		# DB ping
+		ping = connection.cursor(MySQLdb.cursors.DictCursor)
+		try:
+			ping.execute("SELECT 1+1")
+			consoleHelper.printColored("the command has been execute!", bcolors.GREEN)
+		except:
+			consoleHelper.printColored("command not working", bcolors.RED)
+			
 		# Make app
 		glob.application = make_app()
 
@@ -311,13 +319,6 @@ if __name__ == "__main__":
 		# Start Tornado
 		glob.application.listen(serverPort, address=glob.conf.config["server"]["host"])
 		tornado.ioloop.IOLoop.instance().start()
-		# DB ping
-		ping = connection.cursor(MySQLdb.cursors.DictCursor)
-		try:
-			ping.execute("SELECT 1+1")
-			consoleHelper.printColored("the command has been execute!", bcolors.GREEN)
-		except:
-			consoleHelper.printColored("command not working", bcolors.RED)
 
 	finally:
 		# Perform some clean up
