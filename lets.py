@@ -86,8 +86,8 @@ def make_app():
 		(r"/web/replays_relax/(.*)", getFullReplayHandlerRelax.handler),
 		(r"/web/errorlogs/(.*)", getFullErrorHandler.handler),
 
-		(r"/p/verify", redirectHandler.handler, dict(destination="https://datenshi.xyz/")),
-		(r"/u/(.*)", redirectHandler.handler, dict(destination="https://datenshi.xyz/u/{}")),
+		(r"/p/verify", redirectHandler.handler, dict(destination="https://osu.troke.id/")),
+		(r"/u/(.*)", redirectHandler.handler, dict(destination="https://osu.troke.id/u/{}")),
 
 		(r"/api/v1/status", apiStatusHandler.handler),
 		(r"/api/v1/pp", apiPPHandler.handler),
@@ -309,6 +309,8 @@ if __name__ == "__main__":
 		# Start Tornado
 		glob.application.listen(serverPort, address=glob.conf.config["server"]["host"])
 		tornado.ioloop.IOLoop.instance().start()
+		# DB ping
+		dbConnector.ping()
 	finally:
 		# Perform some clean up
 		print("> Disposing server... ")
