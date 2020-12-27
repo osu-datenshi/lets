@@ -7,6 +7,8 @@ import tornado.gen
 import tornado.httpserver
 import tornado.ioloop
 import tornado.web
+import MySQLdb
+import MySQLdb.cursors
 from raven.contrib.tornado import AsyncSentryClient
 import redis
 
@@ -310,7 +312,13 @@ if __name__ == "__main__":
 		glob.application.listen(serverPort, address=glob.conf.config["server"]["host"])
 		tornado.ioloop.IOLoop.instance().start()
 		# DB ping
-		dbConnector.ping()
+		ping = connection.cursor(MySQLdb.cursors.DictCursor)
+		try:
+			ping.execute("SELECT 1+1")
+			consoleHelper.printColored("the command has been execute!", bcolors.GREEN)
+		except:
+			consoleHelper.printColored("command not working", bcolors.RED)
+
 	finally:
 		# Perform some clean up
 		print("> Disposing server... ")
