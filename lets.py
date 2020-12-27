@@ -312,15 +312,32 @@ if __name__ == "__main__":
 				try:
 					glob.db.execute("SELECT 1+1")
 					consoleHelper.printColored("the command has been execute!", bcolors.GREEN)
-				except:
-					consoleHelper.printColored("command not working", bcolors.RED)
 
-		schedule.every(10).seconds.do(ping)
+		schedule.every(1).hour.do(ping)
 
-		while True:
+		use_threading = True
+		if use_threading:
+			import threading
+
+			schedule_thread = threading.Event()
+
+        	class ScheduleThread(threading.Thread):
+            	@classmethod
+            	def run(cls):
+                	while not schedule_thread.is_set():
+                    	consoleHelper.printColored("ok", bcolors.GREEN)
+						schedule.default_scheduler.run_pending()
+                    	time.sleep(0.5)
+
+        	continuous_thread = ScheduleThread()
+        	continuous_thread.start()
+			while True:
+				time.sleep(0.1)
+		else:
+			while True:
+				consoleHelper.printColored("ok", bcolors.GREEN)
 				schedule.run_pending()
-				time.sleep(1)
-				consoleHelper.printColored("sucess running", bcolors.GREEN)
+				time.sleep(0.5)
 
 		# Start Tornado
 		glob.application.listen(serverPort, address=glob.conf.config["server"]["host"])
