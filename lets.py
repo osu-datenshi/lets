@@ -307,15 +307,15 @@ if __name__ == "__main__":
 		# Server start message and console output
 		consoleHelper.printColored("> L.E.T.S. is listening for clients on {}:{}...".format(glob.conf.config["server"]["host"], serverPort), bcolors.GREEN)
 		log.logMessage("Server started!", discord="bunker", stdout=False)
-
+		# DUMMY TEST BUAT GA CLOSE CONNECTION KE MYSQL CONNECT thx to @ReiFan49
 		def ping():
 				try:
 					glob.db.execute("SELECT 1+1")
 					consoleHelper.printColored("the command has been execute!", bcolors.GREEN)
 				except:
 					consoleHelper.printColored("not ok", bcolors.RED)
-
-		schedule.every(5).seconds.do(ping)
+		# setting ke 1 jam nih
+		schedule.every(3600).seconds.do(ping)
 
 		use_threading = True
 		if use_threading:
@@ -327,7 +327,6 @@ if __name__ == "__main__":
 				@classmethod
 				def run(cls):
 					while not schedule_thread.is_set():
-						consoleHelper.printColored("ok brooooooooo", bcolors.GREEN)
 						schedule.default_scheduler.run_pending()
 						time.sleep(0.5)
 
@@ -335,7 +334,6 @@ if __name__ == "__main__":
 			continuous_thread.start()
 		else:
 			while True:
-				consoleHelper.printColored("ok", bcolors.GREEN)
 				schedule.run_pending()
 				time.sleep(0.5)
 
