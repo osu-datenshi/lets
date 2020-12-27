@@ -326,8 +326,9 @@ def ping():
 	except:
 		consoleHelper.printColored("command not working", bcolors.RED)
 
-		schedule.every(10).seconds.do(ping)
+schedule.every(10).seconds.do(ping)
 
 while True:
-		scheduler.run_continously()
+		schedule.run_continously()
 		time.sleep(1)
+		consoleHelper.printColored("sucess running", bcolors.GREEN)
