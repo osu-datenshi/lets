@@ -29,6 +29,7 @@ class worker:
 		c = self.connection.cursor(MySQLdb.cursors.DictCursor)
 		try:
 			c.execute("SELECT 1+1")
+			log.warning("success dummy")
 			return True
 		except MySQLdb.Error:
 			return False
