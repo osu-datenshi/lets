@@ -235,67 +235,25 @@ class handler(requestsManager.asyncRequestHandler):
 			def do_ban():
 				pass
 			
-			# Given a current player statistics
-			# Calculate maximum obtainable PP by player. This will allow proper progression of respective player.
-			def calculate_limit(limiter, stat):
-				# Define a simple scoring with easing to control acceleration towards maximum value.
-				def determine_score(value, low, high, ease):
-					if value < low:
-						return 0
-					elif value > high:
-						return 1
-					return ((value - low) / (high - low)) ** ease
-				
-				pp_limits = (limiter[0], limiter[1])
-				# format (low, hi, ease%)
-				play_count_limits = tuple(limiter[2])
-				total_pp_limits   = tuple(limiter[3])
-				# scoring
-				weight_pc, weight_pp = (limiter[4], limiter[5])
-				score_pc, score_pp = determine_score(stat.playcount, *play_count_limits), determine_score(stat.pp, *total_pp_limits)
-				total_score = score_pc * weight_pc + score_pp * weight_pp
-				log.info("PP Limit Score: {}/{}".format(int(total_score), weight_pc + weight_pp))
-				return pp_limits[0] + int((pp_limits[1] - pp_limits[0]) * (total_score / (weight_pc + weight_pp)))
-			
 			# Restrict obvious cheaters
-			variable_pp_limit = glob.conf.extra['lets']['submit'].fetch('tolerant-pp-limit',False)
-			is_fullmod = bool( (s.mods & (mods.DOUBLETIME | mods.NIGHTCORE)) and (s.mods & mods.FLASHLIGHT) and (s.mods & mods.HARDROCK) and (s.mods & mods.HIDDEN) )
-			var_fullmod = glob.conf.extra['lets']['submit'].fetch('tolerant-fullmod',False)
+			is_fullmod  = bool( (s.mods & (mods.DOUBLETIME | mods.NIGHTCORE)) and (s.mods & mods.FLASHLIGHT) and (s.mods & mods.HARDROCK) and (s.mods & mods.HIDDEN) )
 			if not restricted:
-				# Check eligiblity of Variable Limiter
-				# - it'll go as is, if it's not FULLMOD
-				# - if it's FULLMOD, should check if VARIABLE_FULLMOD is on or not.
-				variable_pp_limit = (is_fullmod and var_fullmod) if is_fullmod else variable_pp_limit
-                                if variable_pp_limit:
-					if UsingRelax:
-						limiter = glob.conf.extra["lets"]["submit"]["max-relax-pp-formula"]
-						current_stats = userUtils.getUserStatsRx(userID, s.gameMode)
-					else:
-						limiter = glob.conf.extra["lets"]["submit"]["max-vanilla-pp-formula"]
-						current_stats = userUtils.getUserStats(userID, s.gameMode)
-					
-					# if FULLMOD, then check if the limiter specific setting existed for it, otherwise use current one
-					if is_fullmod:
-						limiter = glob.conf.extra["lets"]["submit"]["max-fullmod-pp-formula"] or limiter
-					limit_pp = calculate_limit(limiter, current_stats)
-				else:
-					rx_pp = glob.conf.extra["lets"]["submit"]["max-std-pp"]
-					dead_pp = glob.conf.extra["lets"]["submit"]["max-vanilla-pp"]
-					fullmod_pp = glob.conf.extra["lets"]["submit"].fetch("max-fullmod-pp", 1000)
-					limit_pp = fullmod_pp if is_fullmod else (rx_pp if UsingRelax else dead_pp)
-				
+				limit_pp = userUtils.obtainPPLimit(userID, s.gameMode, relax=bool(UsingRelax), modded=is_fullmod)
 				relax = 1 if used_mods & 128 else 0
 				
 				unrestricted_user = userUtils.noPPLimit(userID, relax)
 				null_over_pp = glob.conf.extra['lets']['submit'].fetch('null-over-pp',False)
+				null_mode_pp = limit_pp <= 0
 				
 				if (s.pp >= limit_pp and s.gameMode == gameModes.STD) and not unrestricted_user and not glob.conf.extra["mode"]["no-pp-cap"]:
-					if null_over_pp:
+					if null_mode_pp or null_over_pp:
 						# forgive the user but nullify the PP gain for this run.
 						s.pp = 0
-						if variable_pp_limit:
+						if null_mode_pp:
+							warning_message = "this mode is not available for PP calculation."
+						elif can_limit:
 							warning_message = "looks like your PP gain for this play is over than what you should be able to. Please try again later once you've gained enough PP."
-						elif is_fullmod and not var_fullmod:
+						elif var_limit and is_fullmod:
 							warning_message = "looks like your PP gain is too high. This score won't yield PP."
 						else:
 							warning_message = "looks like your PP gain is too high. This score won't yield PP."
@@ -495,7 +453,7 @@ class handler(requestsManager.asyncRequestHandler):
 			if s.passed:
 				# Get stats and rank
 				oldUserStats = glob.userStatsCacheRX.get(userID, s.gameMode) if UsingRelax else glob.userStatsCache.get(userID, s.gameMode)
-				oldRank = userUtils.getGameRankRx(userID, s.gameMode) if UsingRelax else userUtils.getGameRank(userID, s.gameMode) 
+				oldRank = userUtils.getGameRankRx(userID, s.gameMode) if UsingRelax else userUtils.getGameRank(userID, s.gameMode)
 
 			# Always update users stats (total/ranked score, playcount, level, acc and pp)
 			# even if not passed
@@ -663,7 +621,7 @@ class handler(requestsManager.asyncRequestHandler):
 
 				if s.completed == 3 and restricted == False and beatmapInfo.rankedStatus >= rankedStatuses.RANKED and newScoreboard.personalBestRank > oldPersonalBestRank:
 					if newScoreboard.personalBestRank == 1 and len(newScoreboard.scores) > 2:
-						#woohoo we achieved #1, now we should say to #2 that he sniped!						
+						#woohoo we achieved #1, now we should say to #2 that he sniped!
 						userUtils.logUserLog(messages[2].format(newScoreboard.scores[2].playerName), s.fileMd5, newScoreboard.scores[2].playerUserID, s.gameMode, s.scoreID)
 
 					userLogMsg = messages[0]

@@ -1685,3 +1685,72 @@ def updateTotalHitsRX(userID=0, gameMode=gameModes.STD, newHits=0, score=None):
         ),
         (newHits, userID)
     )
+
+def obtainPPLimit(userID, gameMode, relax=False, modded=False):
+    support_new_limiter = 'pp-limiter' in glob.conf.extra['lets']['submit']
+    mode_name = 'std taiko ctb mania'.split()[s.gameMode]
+    if support_new_limiter:
+        var_limit   = glob.conf.extra['lets']['submit']['pp-limiter'].fetch(mode_name + '-tolerant',False)
+        var_fullmod = glob.conf.extra['lets']['submit']['pp-limiter'].fetch(mode_name + '-tolerant-mod',False)
+    else:
+        var_limit   = glob.conf.extra['lets']['submit'].fetch('tolerant-pp-limit',False)
+        var_fullmod = glob.conf.extra['lets']['submit'].fetch('tolerant-fullmod',False)
+	# Check eligiblity of Variable Limiter
+	# - it'll go as is, if it's not FULLMOD
+	# - if it's FULLMOD, should check if VARIABLE_FULLMOD is on or not.
+	can_limit = (modded and var_fullmod) or var_limit
+	if UsingRelax:
+		current_stats = userUtils.getUserStatsRx(userID, s.gameMode)
+	else:
+		current_stats = userUtils.getUserStats(userId, s.gameMode)
+	# Given a current player statistics
+	# Calculate maximum obtainable PP by player. This will allow proper progression of respective player.
+	def calculate_limit(limiter, stat):
+		# Define a simple scoring with easing to control acceleration towards maximum value.
+		def determine_score(value, low, high, ease):
+			if value < low:
+				return 0
+			elif value > high:
+				return 1
+			return ((value - low) / (high - low)) ** ease
+		
+		pp_limits = (limiter[0], limiter[1])
+		if limiter[1] <= limiter[0]:
+			return limiter[0]
+		# format (low, hi, ease%)
+		play_count_limits = tuple(limiter[2])
+		total_pp_limits   = tuple(limiter[3])
+		# scoring
+		weight_pc, weight_pp = (limiter[4], limiter[5])
+		score_pc, score_pp = determine_score(stat.playcount, *play_count_limits), determine_score(stat.pp, *total_pp_limits)
+		total_score = score_pc * weight_pc + score_pp * weight_pp
+		log.info("PP Limit Score: {}/{}".format(int(total_score), weight_pc + weight_pp))
+		return pp_limits[0] + int((pp_limits[1] - pp_limits[0]) * (total_score / (weight_pc + weight_pp)))
+    pass
+    if can_limit:
+		if support_new_limiter:
+			if UsingRelax:
+				limiter = glob.conf.extra["lets"]["submit"]["pp-limiter"][mode_name + "-relax-fm"]
+			else:
+				limiter = glob.conf.extra["lets"]["submit"]["pp-limiter"][mode_name + "-vanilla-fm"]
+			if is_fullmod:
+				limiter = glob.conf.extra["lets"]["submit"]["pp-limiter"][mode_name + "-modded-fm"] or limiter
+		else:
+			if UsingRelax:
+				limiter = glob.conf.extra["lets"]["submit"]["max-relax-pp-formula"]
+			else:
+				limiter = glob.conf.extra["lets"]["submit"]["max-vanilla-pp-formula"]
+			if is_fullmod:
+				limiter = glob.conf.extra["lets"]["submit"]["max-fullmod-pp-formula"] or limiter
+		score = calculate_limit(limiter, current_stats)
+	else:
+		if support_new_limiter:
+			basic_pp = glob.conf.extra["lets"]["submit"]["pp-limiter"][mode_name + "-vanilla-max"]
+			relax_pp = glob.conf.extra["lets"]["submit"]["pp-limiter"][mode_name + "-relax-max"]
+			fullmod_pp = glob.conf.extra["lets"]["submit"]["pp-limiter"][mode_name + "-modded-max"]
+		else:
+			basic_pp = glob.conf.extra["lets"]["submit"]["max-vanilla-pp"]
+			relax_pp = glob.conf.extra["lets"]["submit"]["max-std-pp"]
+			fullmod_pp = glob.conf.extra["lets"]["submit"].fetch("max-fullmod-pp", 1000)
+		score = fullmod_pp if is_fullmod else (relax_pp if UsingRelax else basic_pp)
+    return (score, var_limit, can_limit)
