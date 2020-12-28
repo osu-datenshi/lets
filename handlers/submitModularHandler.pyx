@@ -238,20 +238,20 @@ class handler(requestsManager.asyncRequestHandler):
 			# Restrict obvious cheaters
 			is_fullmod  = bool( (s.mods & (mods.DOUBLETIME | mods.NIGHTCORE)) and (s.mods & mods.FLASHLIGHT) and (s.mods & mods.HARDROCK) and (s.mods & mods.HIDDEN) )
 			if not restricted:
-				limit_pp = userUtils.obtainPPLimit(userID, s.gameMode, relax=bool(UsingRelax), modded=is_fullmod)
+				limit_pp, var_limit, can_limit = userUtils.obtainPPLimit(userID, s.gameMode, relax=bool(UsingRelax), modded=is_fullmod)
 				relax = 1 if used_mods & 128 else 0
 				
 				unrestricted_user = userUtils.noPPLimit(userID, relax)
 				null_over_pp = glob.conf.extra['lets']['submit'].fetch('null-over-pp',False)
 				null_mode_pp = limit_pp <= 0
 				
-				if (s.pp >= limit_pp and s.gameMode == gameModes.STD) and not unrestricted_user and not glob.conf.extra["mode"]["no-pp-cap"]:
-					if null_mode_pp or null_over_pp:
+				if null_mode_pp:
+					s.pp = -1
+				elif (s.pp >= limit_pp) and not unrestricted_user and not glob.conf.extra["mode"]["no-pp-cap"]:
+					if null_over_pp:
 						# forgive the user but nullify the PP gain for this run.
-						s.pp = 0
-						if null_mode_pp:
-							warning_message = "this mode is not available for PP calculation."
-						elif can_limit:
+						s.pp = -1
+						if can_limit:
 							warning_message = "looks like your PP gain for this play is over than what you should be able to. Please try again later once you've gained enough PP."
 						elif var_limit and is_fullmod:
 							warning_message = "looks like your PP gain is too high. This score won't yield PP."
