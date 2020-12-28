@@ -311,11 +311,11 @@ if __name__ == "__main__":
 		def ping():
 				try:
 					glob.db.execute("SELECT 1+1")
-					consoleHelper.printColored("the command has been execute!", bcolors.GREEN)
+					consoleHelper.printColored("[AUTOMATED QUERY] has been execute!", bcolors.GREEN)
 				except:
-					consoleHelper.printColored("not ok", bcolors.RED)
+					consoleHelper.printColored("error!", bcolors.RED)
 		# setting ke 1 jam nih
-		schedule.every(3600).seconds.do(ping)
+		schedule.every(1800).seconds.do(ping)
 
 		use_threading = True
 		if use_threading:
