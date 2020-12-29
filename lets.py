@@ -311,9 +311,9 @@ if __name__ == "__main__":
 		def ping():
 				try:
 					glob.db.execute("SELECT 1+1")
-					consoleHelper.printColored("[AUTOMATED QUERY] has been execute!", bcolors.GREEN)
+					log.info("[AUTOMATED QUERY] has been execute!")
 				except:
-					consoleHelper.printColored("error! the server will restart!", bcolors.RED)
+					log.info("[AUTOMATED QUERY] error! the connection will restart!")
 					#os.execv(sys.executable, [sys.executable] + sys.argv) //automated restart lets when error
 					glob.db = dbConnector.db(glob.conf.config["db"]["host"], glob.conf.config["db"]["username"], glob.conf.config["db"]["password"], glob.conf.config["db"]["database"], int(
 				glob.conf.config["db"]["workers"]))
