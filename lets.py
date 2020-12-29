@@ -313,7 +313,11 @@ if __name__ == "__main__":
 					glob.db.execute("SELECT 1+1")
 					consoleHelper.printColored("[AUTOMATED QUERY] has been execute!", bcolors.GREEN)
 				except:
-					consoleHelper.printColored("error!", bcolors.RED)
+					consoleHelper.printColored("error! the server will restart!", bcolors.RED)
+					#os.execv(sys.executable, [sys.executable] + sys.argv) //automated restart lets when error
+					glob.db = dbConnector.db(glob.conf.config["db"]["host"], glob.conf.config["db"]["username"], glob.conf.config["db"]["password"], glob.conf.config["db"]["database"], int(
+				glob.conf.config["db"]["workers"]))
+
 		# setting ke 1 jam nih
 		schedule.every(1800).seconds.do(ping)
 
