@@ -11,6 +11,7 @@ import os
 import threading
 import time
 import json
+import re
 
 import MySQLdb.cursors
 import progressbar
@@ -118,6 +119,9 @@ class SimpleRecalculator(Recalculator):
         else:
             raise TypeError("`conditions` must be either a `str`, `tuple` or `list`")
         q = "SELECT {} FROM scores JOIN beatmaps USING(beatmap_md5) WHERE {} ORDER BY scores.id DESC"
+        # Enforces PP filter if it's not defined (to avoid nullified PP)
+        if not re.search(r'\bpp (?:[<>]|[=]|[<>][=]) \d+\b', conditions_str):
+            conditions_str = conditions_str + " AND pp >= 0"
         super(SimpleRecalculator, self).__init__(
             ids_query=RecalculatorQuery(q.format("scores.id AS id", conditions_str), parameters),
             count_query=RecalculatorQuery(q.format("COUNT(*) AS c", conditions_str), parameters)
