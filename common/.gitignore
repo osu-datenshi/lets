@@ -1,6 +1,0 @@
-**/build
-**/__pycache__
-.idea
-*.c
-*.so
-config.json
