@@ -364,8 +364,8 @@ class beatmap:
 
 	def autoRankCapability(self, mapData):
 		# no autoranking a fixed rank map
-		obtainDateTime  = lambda time: datetime.datetime.strptime(time, "%Y-%m-%d %H:%M:%S")
-		obtainUnixClock = lambda time: int(time.mktime(obtainDateTime(time).timetuple()))
+		obtainDateTime  = lambda t: datetime.datetime.strptime(t, "%Y-%m-%d %H:%M:%S")
+		obtainUnixClock = lambda t: int(time.mktime(t.timetuple()))
 		dateTouch   = obtainDateTime(mapData['last_update'])
 		if self.rankedStatusFrozen not in (1,2):
 			# TODO: check autorank_users
