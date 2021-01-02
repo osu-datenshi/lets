@@ -212,7 +212,7 @@ class handler(requestsManager.asyncRequestHandler):
 			# Send message
 			def send_bot_message(msg):
 				safe_user = username.encode().decode("ASCII", "ignore")
-				alert = "{}, {}".format(safe_user, message)
+				alert = "{}, {}".format(safe_user, msg)
 				params = urlencode({"k": glob.conf.config["server"]["apikey"], "to": safe_user, "msg": alert})
 				requests.get("{}/api/v1/fokabotMessage?{}".format(glob.conf.config["server"]["banchourl"], params))
 			

@@ -269,7 +269,7 @@ class beatmap:
 		if mainData['approved_date']:
 			lastUpdate = obtainUnixClock(mainData['approved_date'])
 		else:
-			lastUpdate = autoRankCapability(mainData)
+			lastUpdate = self.autoRankCapability(mainData)
 		
 		self.rankedStatus = convertRankedStatus(int(mainData["approved"]))
 		self.rankingDate = lastUpdate
@@ -366,6 +366,7 @@ class beatmap:
 		# no autoranking a fixed rank map
 		obtainDateTime  = lambda time: datetime.datetime.strptime(time, "%Y-%m-%d %H:%M:%S")
 		obtainUnixClock = lambda time: int(time.mktime(obtainDateTime(time).timetuple()))
+		dateTouch   = obtainDateTime(mapData['last_update'])
 		if self.rankedStatusFrozen not in (1,2):
 			# TODO: check autorank_users
 			validUser     = self.is_autoRankCreator()
@@ -374,7 +375,6 @@ class beatmap:
 			validLovable  = self.is_autoLovable()
 			
 			dateNow     = datetime.datetime.today()
-			dateTouch   = obtainDateTime(mapData['last_update'])
 			dateQualify = dateTouch + datetime.timedelta(days=21)
 			dateRanked  = dateTouch + datetime.timedelta(days=28)
 			validCall   = validUser and validMap
