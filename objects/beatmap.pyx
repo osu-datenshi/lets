@@ -100,7 +100,7 @@ class beatmap:
 			self.fileMD5,
 			self.mode,
 			self.songName.encode("utf-8", "ignore").decode("utf-8"),
-			self.displayTitle,
+			self.displayTitle.encode("utf-8", "ignore").decode("utf-8"),
 			self.AR,
 			self.OD,
 			self.starsStd,
@@ -118,11 +118,11 @@ class beatmap:
 		if self.fileName is not None:
 			params.append(self.fileName)
 		objects.glob.db.execute(
-			"INSERT INTO `beatmaps` (`id`, `beatmap_id`, `beatmapset_id`, `creator_id`, `beatmap_md5`, `mode`, `song_name`, `display_title` "
+			"INSERT INTO `beatmaps` (`id`, `beatmap_id`, `beatmapset_id`, `creator_id`, `beatmap_md5`, `mode`, `song_name`, `display_title`, "
 			"`ar`, `od`, `difficulty_std`, `difficulty_taiko`, `difficulty_ctb`, `difficulty_mania`, "
 			"`max_combo`, `hit_length`, `bpm`, `ranked`, "
 			"`latest_update`, `ranked_status_freezed`{extra_q}) "
-			"VALUES (NULL, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s{extra_p})".format(
+			"VALUES (NULL, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s{extra_p})".format(
 				extra_q=", `file_name`" if self.fileName is not None else "",
 				extra_p=", %s" if self.fileName is not None else "",
 			), params
@@ -256,7 +256,7 @@ class beatmap:
 				return True
 
 		# We have data from osu!api, set beatmap data
-		obtainUnixClock = lambda time: int(time.mktime(datetime.datetime.strptime(time, "%Y-%m-%d %H:%M:%S").timetuple()))
+		obtainUnixClock = lambda t: int(time.mktime(datetime.datetime.strptime(t, "%Y-%m-%d %H:%M:%S").timetuple()))
 		log.debug("Got beatmap data from osu!api")
 		self.songName = "{} - {} [{}]".format(mainData["artist"], mainData["title"], mainData["version"])
 		self.fileName = "{} - {} ({}) [{}].osu".format(
@@ -326,7 +326,7 @@ class beatmap:
 			if not apiResult:
 				# If it's not even in osu!api, this beatmap is not submitted
 				self.rankedStatus = rankedStatuses.NOT_SUBMITTED
-			elif self.rankedStatus != rankedStatuses.NOT_SUBMITTED and self.rankedStatus != rankedStatuses.NEED_UPDATE:
+			elif self.rankedStatus not in (rankedStatuses.NOT_SUBMITTED, rankedStatuses.NEED_UPDATE):
 				# We get beatmap data from osu!api, save it in db
 				self.addBeatmapToDB()
 		else:
@@ -348,7 +348,7 @@ class beatmap:
 		
 		end_data = [str(rankedStatusOutput), 'true' if self.isOsz2 else 'false']
 		data = "{}|false".format(rankedStatusOutput)
-		if self.rankedStatus != rankedStatuses.NOT_SUBMITTED and self.rankedStatus != rankedStatuses.NEED_UPDATE and self.rankedStatus != rankedStatuses.UNKNOWN:
+		if self.rankedStatus not in (rankedStatuses.NOT_SUBMITTED, rankedStatuses.NEED_UPDATE, rankedStatuses.UNKNOWN):
 			# If the beatmap is updated and exists, the client needs more data
 			end_data.extend([self.beatmapID, self.beatmapSetID])
 			end_data.append("\n".join(str(l) for l in [totalScores, self.offset, self.displayTitle, self.rating, '']))
@@ -382,13 +382,16 @@ class beatmap:
 			if dateNow > dateRanked and validCall:
 				if validLovable:
 					mapData['approved'] = str(rankedStatuses.LOVED)
+					log.info(f"{self.songTitle} is auto-lovable")
 				else:
 					mapData['approved'] = str(rankedStatuses.RANKED)
+					log.info(f"{self.songTitle} is auto-rankable")
 				self.rankedStatusFrozen = 3
 				return obtainUnixClock(dateRanked)
 			# A map won't be qualified if it's loved potential
 			elif dateNow > dateQualify and validCall and not validLovable:
 				mapData['approved'] = str(rankedStatuses.QUALIFIED)
+				log.info(f"{self.songTitle} is auto-qualifiable")
 				return obtainUnixClock(dateQualify)
 			else:
 				return obtainUnixClock(dateTouch)
