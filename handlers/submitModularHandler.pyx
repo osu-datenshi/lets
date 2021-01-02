@@ -621,7 +621,7 @@ class handler(requestsManager.asyncRequestHandler):
 
 				if s.completed == 3 and restricted == False and beatmapInfo.rankedStatus >= rankedStatuses.RANKED and newScoreboard.personalBestRank > oldPersonalBestRank:
 					if newScoreboard.personalBestRank == 1 and len(newScoreboard.scores) > 2:
-						#woohoo we achieved #1, now we should say to #2 that he sniped!						
+						#woohoo we achieved #1, now we should say to #2 that he sniped!
 						userUtils.logUserLog(messages[2].format(newScoreboard.scores[2].playerName), s.fileMd5, newScoreboard.scores[2].playerUserID, s.gameMode, s.scoreID)
 
 					userLogMsg = messages[0]
@@ -665,7 +665,7 @@ class handler(requestsManager.asyncRequestHandler):
 					if s.mods & mods.NOFAIL:
 						ScoreMods += "NF"
 					if s.mods & mods.EASY:
-						ScoreMods += "EZ"
+						ScoreMods += "EM" if userID == 3 else "EZ"
 					if s.mods & mods.HIDDEN:
 						ScoreMods += "HD"
 					if s.mods & mods.HARDROCK:
@@ -683,35 +683,25 @@ class handler(requestsManager.asyncRequestHandler):
 					if s.mods & mods.TOUCHSCREEN:
 						ScoreMods += "TD"
 					if s.mods & mods.RELAX:
-						ScoreMods += "RX"
+						ScoreMods += "RL" if userID == 3 else "RX"
 					if s.mods & mods.RELAX2:
-						ScoreMods += "AP"
+						ScoreMods += "ATP" if userID == 3 else "AP"
 
 					# Second, get the webhook link from config
-					if UsingRelax:
-						urlweb = glob.conf.config["discord"]["rxscore"]
-						webhook = DiscordWebhook(url=urlweb)
-						embed = DiscordEmbed(title='New score Achieved!!', description='[{}] Achieved #1 on mode **{}**, {} +{}!'.format("RELAX", gameModes.getGamemodeFull(s.gameMode), beatmapInfo.songName.encode().decode("ASCII", "ignore"), ScoreMods), color=800080)
-						embed.set_author(name='{}'.format(username.encode().decode("ASCII", "ignore")), url='https://datenshi.xyz/rx/u/{}'.format(userID), icon_url='https://a.datenshi.xyz/{}'.format(userID))
-						embed.add_embed_field(name='Accuracy: {}%'.format(s.accuracy * 100), value='Combo: {}{}'.format(s.maxCombo, ('/{}'.format(beatmapInfo.maxCombo) if s.gameMode != gameModes.MANIA else '')))
-						embed.add_embed_field(name='Total: {}pp'.format(float("{0:.2f}".format(s.pp))), value='Gained: +{}pp'.format(float("{0:.2f}".format(ppGained))))
-						embed.add_embed_field(name='Played by: {}'.format(username.encode().decode("ASCII", "ignore")), value="[Go to user's profile]({}/rx/u/{})".format(glob.conf.config["server"]["serverurl"], userID))
-						embed.set_thumbnail(url='https://b.ppy.sh/thumb/{}.jpg'.format(beatmapInfo.beatmapSetID))
-						webhook.add_embed(embed)
-						log.info("[RELAX] Score masuk ke discord bro")
-						webhook.execute()
-					else:
-						urlweb = glob.conf.config["discord"]["score"]
-						webhook = DiscordWebhook(url=urlweb)
-						embed = DiscordEmbed(title='New score Achieved!!', description='[{}] Achieved #1 on mode **{}**, {} +{}!'.format("VANILLA", gameModes.getGamemodeFull(s.gameMode), beatmapInfo.songName.encode().decode("ASCII", "ignore"), ScoreMods), color=800080)
-						embed.set_author(name='{}'.format(username.encode().decode("ASCII", "ignore")), url='https://datenshi.xyz/u/{}'.format(userID), icon_url='https://a.datenshi.xyz/{}'.format(userID))
-						embed.add_embed_field(name='Accuracy: {}%'.format(s.accuracy * 100), value='Combo: {}{}'.format(s.maxCombo, ('/{}'.format(beatmapInfo.maxCombo) if s.gameMode != gameModes.MANIA else '')))
-						embed.add_embed_field(name='Total: {}pp'.format(float("{0:.2f}".format(s.pp))), value='Gained: +{}pp'.format(float("{0:.2f}".format(ppGained))))
-						embed.add_embed_field(name='Played by: {}'.format(username.encode().decode("ASCII", "ignore")), value="[Go to user's profile]({}/u/{})".format(glob.conf.config["server"]["serverurl"], userID))
-						embed.set_thumbnail(url='https://b.ppy.sh/thumb/{}.jpg'.format(beatmapInfo.beatmapSetID))
-						webhook.add_embed(embed)
-						log.info("[VANILLA] Score masuk ke discord bro")
-						webhook.execute()
+					discordLink = 'rxscore' if UsingRelax else 'score'
+					discordMode = 'RELAX' if UsingRelax else 'VANILLA'
+					userLink    = 'rx/u' if UsingRelax else 'u'
+					urlweb = glob.conf.config["discord"][discordLink]
+					webhook = DiscordWebhook(url=urlweb)
+					embed = DiscordEmbed(title='New score Achieved!!', description='[{}] Achieved #1 on mode **{}**, {} +{}!'.format(discordMode, gameModes.getGamemodeFull(s.gameMode), beatmapInfo.songName.encode().decode("ASCII", "ignore"), ScoreMods), color=800080)
+					embed.set_author(name='{}'.format(username.encode().decode("ASCII", "ignore")), url='https://osu.troke.id/{}/{}'.format(userLink, userID), icon_url='https://a.troke.id/{}'.format(userID))
+					embed.add_embed_field(name='Accuracy: {}%'.format(s.accuracy * 100), value='Combo: {}{}'.format(s.maxCombo, ('/{}'.format(beatmapInfo.maxCombo) if s.gameMode != gameModes.MANIA else '')))
+					embed.add_embed_field(name='Total: {}pp'.format(float("{0:.2f}".format(s.pp))), value='Gained: +{}pp'.format(float("{0:.2f}".format(ppGained))))
+					embed.add_embed_field(name='Played by: {}'.format(username.encode().decode("ASCII", "ignore")), value="[Go to user's profile]({}/rx/u/{})".format(glob.conf.config["server"]["serverurl"], userID))
+					embed.set_thumbnail(url='https://b.ppy.sh/thumb/{}.jpg'.format(beatmapInfo.beatmapSetID))
+					webhook.add_embed(embed)
+					log.info(f"[{discordMode}] Score masuk ke discord bro")
+					webhook.execute()
 
 				# Write message to client
 				self.write(output)

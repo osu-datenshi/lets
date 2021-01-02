@@ -2,15 +2,15 @@ import time
 import datetime
 
 from common.log import logUtils as log
+from common.constants import privileges
 from constants import rankedStatuses
 from helpers import osuapiHelper
 import objects.glob
 
-
 class beatmap:
-	__slots__ = ("songName", "fileMD5", "rankedStatus", "rankedStatusFrozen", "beatmapID", "beatmapSetID", "offset",
-	             "rating", "starsStd", "starsTaiko", "starsCtb", "starsMania", "AR", "OD", "maxCombo", "hitLength",
-	             "bpm", "rankingDate", "playcount" ,"passcount", "refresh", "fileName")
+	__slots__ = ("songName", "fileMD5", "rankedStatus", "rankedStatusFrozen", "beatmapID", "beatmapSetID", 'creatorID', 'displayTitle', "offset",
+	             "rating", "mode", "starsStd", "starsTaiko", "starsCtb", "starsMania", "AR", "OD", "maxCombo", "hitLength",
+	             "bpm", "rankingDate", "playcount" ,"passcount", "refresh", "fileName", 'isOsz2')
 
 	def __init__(self, md5 = None, beatmapSetID = None, gameMode = 0, refresh=False, fileName=None):
 		"""
@@ -20,12 +20,14 @@ class beatmap:
 		beatmapSetID -- beatmapSetID. Optional.
 		"""
 		self.songName = ""
+		self.displayTitle = ''
 		self.fileMD5 = ""
 		self.fileName = fileName
 		self.rankedStatus = rankedStatuses.NOT_SUBMITTED
 		self.rankedStatusFrozen = 0
 		self.beatmapID = 0
 		self.beatmapSetID = 0
+		self.creatorID = 0
 		self.offset = 0		# Won't implement
 		self.rating = 0.
 
@@ -33,6 +35,7 @@ class beatmap:
 		self.starsTaiko = 0.0	# stars for converted
 		self.starsCtb = 0.0		# stars for converted
 		self.starsMania = 0.0	# stars for converted
+		self.mode = 0
 		self.AR = 0.0
 		self.OD = 0.0
 		self.maxCombo = 0
@@ -43,6 +46,7 @@ class beatmap:
 		
 		# Statistics for ranking panel
 		self.playcount = 0
+		self.isOsz2 = False
 
 		# Force refresh from osu api
 		self.refresh = refresh
@@ -81,18 +85,22 @@ class beatmap:
 
 		# Add new beatmap data
 		log.debug("Saving beatmap data in db...")
-		"""
-		objects.glob.db.execute(
-			"INSERT INTO `beatmaps` (`id`, `beatmap_id`, `beatmapset_id`, `beatmap_md5`, `song_name`, "
-			"`ar`, `od`, `difficulty_std`, `difficulty_taiko`, `difficulty_ctb`, `difficulty_mania`, "
-			"`max_combo`, `hit_length`, `bpm`, `ranked`, `latest_update`, `ranked_status_freezed`) "
-			"VALUES (NULL, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (
-		"""
+		if False:
+			"""
+			objects.glob.db.execute(
+				"INSERT INTO `beatmaps` (`id`, `beatmap_id`, `beatmapset_id`, `beatmap_md5`, `song_name`, "
+				"`ar`, `od`, `difficulty_std`, `difficulty_taiko`, `difficulty_ctb`, `difficulty_mania`, "
+				"`max_combo`, `hit_length`, `bpm`, `ranked`, `latest_update`, `ranked_status_freezed`) "
+				"VALUES (NULL, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (
+			"""
 		params = [
 			self.beatmapID,
 			self.beatmapSetID,
+			self.creatorID,
 			self.fileMD5,
+			self.mode,
 			self.songName.encode("utf-8", "ignore").decode("utf-8"),
+			self.displayTitle,
 			self.AR,
 			self.OD,
 			self.starsStd,
@@ -110,11 +118,11 @@ class beatmap:
 		if self.fileName is not None:
 			params.append(self.fileName)
 		objects.glob.db.execute(
-			"INSERT INTO `beatmaps` (`id`, `beatmap_id`, `beatmapset_id`, `beatmap_md5`, `song_name`, "
+			"INSERT INTO `beatmaps` (`id`, `beatmap_id`, `beatmapset_id`, `creator_id`, `beatmap_md5`, `mode`, `song_name`, `display_title` "
 			"`ar`, `od`, `difficulty_std`, `difficulty_taiko`, `difficulty_ctb`, `difficulty_mania`, "
 			"`max_combo`, `hit_length`, `bpm`, `ranked`, "
 			"`latest_update`, `ranked_status_freezed`{extra_q}) "
-			"VALUES (NULL, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s{extra_p})".format(
+			"VALUES (NULL, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s{extra_p})".format(
 				extra_q=", `file_name`" if self.fileName is not None else "",
 				extra_p=", %s" if self.fileName is not None else "",
 			), params
@@ -153,13 +161,14 @@ class beatmap:
 		# Set cached data period
 		expire = int(objects.glob.conf.config["server"]["beatmapcacheexpire"])
 
-		# If the beatmap is ranked, we don't need to refresh data from osu!api that often
-		if data["ranked"] >= rankedStatuses.RANKED and data["ranked_status_freezed"] == 0:
-			expire *= 3
+		if not data['ranked_status_freezed']:
+			# If the beatmap is ranked, we don't need to refresh data from osu!api that often
+			if data["ranked"] >= rankedStatuses.RANKED:
+				expire *= 3
 
-		# Make sure the beatmap data in db is not too old
-		if int(expire) > 0 and time.time() > data["latest_update"]+int(expire) and not data["ranked_status_freezed"]:
-			return False
+			# Make sure the beatmap data in db is not too old
+			if int(expire) > 0 and time.time() > data["latest_update"]+int(expire):
+				return False
 
 		# Data in DB, set beatmap data
 		log.debug("Got beatmap data from db")
@@ -179,6 +188,9 @@ class beatmap:
 		self.rankedStatusFrozen = int(data["ranked_status_freezed"])
 		self.beatmapID = int(data["beatmap_id"])
 		self.beatmapSetID = int(data["beatmapset_id"])
+		self.creatorID = int(data.get('creator_id',0))
+		self.displayTitle = data['displayTitle']
+		self.mode = int(data['mode'])
 		self.AR = float(data["ar"])
 		self.OD = float(data["od"])
 		self.starsStd = float(data["difficulty_std"])
@@ -243,18 +255,27 @@ class beatmap:
 				self.rankedStatus = rankedStatuses.NEED_UPDATE
 				return True
 
-
 		# We have data from osu!api, set beatmap data
+		obtainUnixClock = lambda time: int(time.mktime(datetime.datetime.strptime(time, "%Y-%m-%d %H:%M:%S").timetuple()))
 		log.debug("Got beatmap data from osu!api")
 		self.songName = "{} - {} [{}]".format(mainData["artist"], mainData["title"], mainData["version"])
 		self.fileName = "{} - {} ({}) [{}].osu".format(
 			mainData["artist"], mainData["title"], mainData["creator"], mainData["version"]
 		).replace("\\", "")
+		self.displayTitle = f"[bold:0,size:20]{mainData['artist_unicode'] or mainData['artist']}|{mainData['title_unicode'] or mainData['title']}"
 		self.fileMD5 = md5
+		
+		self.creatorID = int(mainData['creator_id'])
+		if mainData['approved_date']:
+			lastUpdate = obtainUnixClock(mainData['approved_date'])
+		else:
+			lastUpdate = autoRankCapability(mainData)
+		
 		self.rankedStatus = convertRankedStatus(int(mainData["approved"]))
-		self.rankingDate = int(time.mktime(datetime.datetime.strptime(mainData["last_update"], "%Y-%m-%d %H:%M:%S").timetuple()))
+		self.rankingDate = lastUpdate
 		self.beatmapID = int(mainData["beatmap_id"])
 		self.beatmapSetID = int(mainData["beatmapset_id"])
+		self.mode = int(mainData['mode'])
 		self.AR = float(mainData["diff_approach"])
 		self.OD = float(mainData["diff_overall"])
 
@@ -324,14 +345,56 @@ class beatmap:
 			rankedStatusOutput = rankedStatuses.QUALIFIED
 		else:
 			rankedStatusOutput = self.rankedStatus
+		
+		end_data = [str(rankedStatusOutput), 'true' if self.isOsz2 else 'false']
 		data = "{}|false".format(rankedStatusOutput)
 		if self.rankedStatus != rankedStatuses.NOT_SUBMITTED and self.rankedStatus != rankedStatuses.NEED_UPDATE and self.rankedStatus != rankedStatuses.UNKNOWN:
 			# If the beatmap is updated and exists, the client needs more data
-			data += "|{}|{}|{}\n{}\n{}\n{}\n".format(self.beatmapID, self.beatmapSetID, totalScores, self.offset, self.songName, self.rating)
+			end_data.extend([self.beatmapID, self.beatmapSetID])
+			end_data.append("\n".join(str(l) for l in [totalScores, self.offset, self.displayTitle, self.rating, '']))
+			data += "|{}|{}|{}\n{}\n{}\n{}\n".format(self.beatmapID, self.beatmapSetID, totalScores, self.offset, self.displayTitle, self.rating)
+			try:
+				log.info('|'.join(end_data))
+			except Exception:
+				pass
 
 		# Return the header
 		return data
+		# return '|'.join(end_data)
 
+	def autoRankCapability(self, mapData):
+		# no autoranking a fixed rank map
+		obtainDateTime  = lambda time: datetime.datetime.strptime(time, "%Y-%m-%d %H:%M:%S")
+		obtainUnixClock = lambda time: int(time.mktime(obtainDateTime(time).timetuple()))
+		if self.rankedStatusFrozen not in (1,2):
+			# TODO: check autorank_users
+			validUser     = self.is_autoRankCreator()
+			# TODO: check autorank_loved or autorank_ignore
+			validMap      = self.is_autoRankable()
+			validLovable  = self.is_autoLovable()
+			
+			dateNow     = datetime.datetime.today()
+			dateTouch   = obtainDateTime(mapData['last_update'])
+			dateQualify = dateTouch + datetime.timedelta(days=21)
+			dateRanked  = dateTouch + datetime.timedelta(days=28)
+			validCall   = validUser and validMap
+			# A map can't get ranked/loved/qualified if the user is not valid..
+			if dateNow > dateRanked and validCall:
+				if validLovable:
+					mapData['approved'] = str(rankedStatuses.LOVED)
+				else:
+					mapData['approved'] = str(rankedStatuses.RANKED)
+				self.rankedStatusFrozen = 3
+				return obtainUnixClock(dateRanked)
+			# A map won't be qualified if it's loved potential
+			elif dateNow > dateQualify and validCall and not validLovable:
+				mapData['approved'] = str(rankedStatuses.QUALIFIED)
+				return obtainUnixClock(dateQualify)
+			else:
+				return obtainUnixClock(dateTouch)
+		else:
+			return obtainUnixClock(dateTouch)
+		
 	def getCachedTillerinoPP(self):
 		"""
 		Returned cached pp values for 100, 99, 98 and 95 acc nomod
@@ -355,6 +418,29 @@ class beatmap:
 	@property
 	def is_rankable(self):
 		return self.rankedStatus >= rankedStatuses.RANKED and self.rankedStatus != rankedStatuses.UNKNOWN
+	
+	@property
+	def is_autoRankCreator(self):
+		if not self.creatorID:
+			return False
+		result = objects.glob.db.fetch("SELECT active FROM autorank_users WHERE bancho_id = %s AND active = 1",[self.creatorID])
+		if not result:
+			return False
+		return result['active']
+	
+	@property
+	def is_autoRankable(self):
+		result = objects.glob.db.fetch("SELECT flag_valid FROM autorank_flags WHERE beatmap_id = %s",[self.beatmapID])
+		if not result:
+			return False
+		return result['flag_valid']
+	
+	@property
+	def is_autoLovable(self):
+		result = objects.glob.db.fetch("SELECT flag_lovable FROM autorank_flags WHERE beatmap_id = %s",[self.beatmapID])
+		if not result:
+			return False
+		return result['flag_lovable']
 
 def convertRankedStatus(approvedStatus):
 	"""
