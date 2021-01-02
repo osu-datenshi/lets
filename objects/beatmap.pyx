@@ -189,7 +189,7 @@ class beatmap:
 		self.beatmapID = int(data["beatmap_id"])
 		self.beatmapSetID = int(data["beatmapset_id"])
 		self.creatorID = int(data.get('creator_id',0))
-		self.displayTitle = data['displayTitle']
+		self.displayTitle = data['display_title'] or ''
 		self.mode = int(data['mode'])
 		self.AR = float(data["ar"])
 		self.OD = float(data["od"])
