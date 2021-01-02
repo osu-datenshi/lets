@@ -369,10 +369,10 @@ class beatmap:
 		dateTouch   = obtainDateTime(mapData['last_update'])
 		if self.rankedStatusFrozen not in (1,2):
 			# TODO: check autorank_users
-			validUser     = self.is_autoRankCreator()
+			validUser     = self.is_autoRankCreator
 			# TODO: check autorank_loved or autorank_ignore
-			validMap      = self.is_autoRankable()
-			validLovable  = self.is_autoLovable()
+			validMap      = self.is_autoRankable
+			validLovable  = self.is_autoLovable
 			
 			dateNow     = datetime.datetime.today()
 			dateQualify = dateTouch + datetime.timedelta(days=21)
