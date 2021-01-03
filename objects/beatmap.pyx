@@ -111,6 +111,7 @@ class beatmap:
 			self.difficultyName.encode("utf-8", "ignore").decode("utf-8"),
 			self.artistUnicode.encode("utf-8", "ignore").decode("utf-8"),
 			self.titleUnicode.encode("utf-8", "ignore").decode("utf-8"),
+			self.songName.encode("utf-8", "ignore").decode("utf-8"),
 			self.displayTitle.encode("utf-8", "ignore").decode("utf-8"),
 			self.AR,
 			self.OD,
@@ -135,7 +136,7 @@ class beatmap:
 			"`max_combo`, `hit_length`, `bpm`, `ranked`, "
 			"`latest_update`, `ranked_status_freezed`{extra_q}) "
 			"VALUES (NULL, {mandat_p})".format(
-				mandat_p=", ".join(['%s']*len(params))
+				mandat_p=", ".join(['%s']*len(params)),
 				extra_q=", `file_name`" if self.fileName is not None else "",
 			), params
 		)
@@ -196,9 +197,9 @@ class beatmap:
 		"""
 		self.artist = data['artist'] or ""
 		self.title = data['title'] or ""
-		self.difficultyName = data['difficultyName'] or ""
-		self.artistUnicode = data['artistUnicode'] or self.artist
-		self.titleUnicode = data['titleUnicode'] or self.title
+		self.difficultyName = data['difficulty_name'] or ""
+		self.artistUnicode = data['artist_unicode'] or self.artist
+		self.titleUnicode = data['title_unicode'] or self.title
 		self.songName = data["song_name"]
 		self.fileMD5 = data["beatmap_md5"]
 		self.rankedStatus = int(data["ranked"])
@@ -271,13 +272,17 @@ class beatmap:
 				# We have some data, but md5 doesn't match. Beatmap is outdated
 				self.rankedStatus = rankedStatuses.NEED_UPDATE
 				return True
+		
+		if not isinstance(mainData, dict):
+			log.warning(f"Something is not right in here. Got {type(mainData)} instead.")
+			return False
 
 		# We have data from osu!api, set beatmap data
 		obtainUnixClock = lambda t: int(time.mktime(datetime.datetime.strptime(t, "%Y-%m-%d %H:%M:%S").timetuple()))
 		log.debug("Got beatmap data from osu!api")
 		self.artist, self.title = mainData['artist'] or '', mainData['title'] or ''
 		self.difficultyName = mainData['version'] or ''
-		self.artistUnicode, self.titleUnicode = mainData['artist_unicode'] or self.artist, mainData['title_unicode'], self.title
+		self.artistUnicode, self.titleUnicode = mainData['artist_unicode'] or self.artist, mainData['title_unicode'] or self.title
 		self.songName = "{} - {} [{}]".format(self.artist, self.title, self.difficultyName)
 		self.fileName = "{} - {} ({}) [{}].osu".format(
 			self.artist, self.title, mainData["creator"], self.difficultyName,
