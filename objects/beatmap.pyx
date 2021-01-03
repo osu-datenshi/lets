@@ -8,7 +8,9 @@ from helpers import osuapiHelper
 import objects.glob
 
 class beatmap:
-	__slots__ = ("songName", "fileMD5", "rankedStatus", "rankedStatusFrozen", "beatmapID", "beatmapSetID", 'creatorID', 'displayTitle', "offset",
+	__slots__ = ('artist', 'title', 'difficultyName', 'artistUnicode', 'titleUnicode',
+	             "songName", "fileMD5", "rankedStatus", "rankedStatusFrozen",
+							 "beatmapID", "beatmapSetID", 'creatorID', 'displayTitle', "offset",
 	             "rating", "mode", "starsStd", "starsTaiko", "starsCtb", "starsMania", "AR", "OD", "maxCombo", "hitLength",
 	             "bpm", "rankingDate", "playcount" ,"passcount", "refresh", "fileName", 'isOsz2')
 
@@ -19,6 +21,11 @@ class beatmap:
 		md5 -- beatmap md5. Optional.
 		beatmapSetID -- beatmapSetID. Optional.
 		"""
+		self.artist = ""
+		self.title = ""
+		self.difficultyName = ""
+		self.artistUnicode = ""
+		self.titleUnicode = ""
 		self.songName = ""
 		self.displayTitle = ''
 		self.fileMD5 = ""
@@ -99,7 +106,11 @@ class beatmap:
 			self.creatorID,
 			self.fileMD5,
 			self.mode,
-			self.songName.encode("utf-8", "ignore").decode("utf-8"),
+			self.artist.encode("utf-8", "ignore").decode("utf-8"),
+			self.title.encode("utf-8", "ignore").decode("utf-8"),
+			self.difficultyName.encode("utf-8", "ignore").decode("utf-8"),
+			self.artistUnicode.encode("utf-8", "ignore").decode("utf-8"),
+			self.titleUnicode.encode("utf-8", "ignore").decode("utf-8"),
 			self.displayTitle.encode("utf-8", "ignore").decode("utf-8"),
 			self.AR,
 			self.OD,
@@ -118,13 +129,14 @@ class beatmap:
 		if self.fileName is not None:
 			params.append(self.fileName)
 		objects.glob.db.execute(
-			"INSERT INTO `beatmaps` (`id`, `beatmap_id`, `beatmapset_id`, `creator_id`, `beatmap_md5`, `mode`, `song_name`, `display_title`, "
+			"INSERT INTO `beatmaps` (`id`, `beatmap_id`, `beatmapset_id`, `creator_id`, "
+			"`beatmap_md5`, `mode`, `artist`, `title`, `difficulty_name`, `artist_unicode`, `title_unicode`, `song_name`, `display_title`, "
 			"`ar`, `od`, `difficulty_std`, `difficulty_taiko`, `difficulty_ctb`, `difficulty_mania`, "
 			"`max_combo`, `hit_length`, `bpm`, `ranked`, "
 			"`latest_update`, `ranked_status_freezed`{extra_q}) "
-			"VALUES (NULL, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s{extra_p})".format(
+			"VALUES (NULL, {mandat_p})".format(
+				mandat_p=", ".join(['%s']*len(params))
 				extra_q=", `file_name`" if self.fileName is not None else "",
-				extra_p=", %s" if self.fileName is not None else "",
 			), params
 		)
 
@@ -182,6 +194,11 @@ class beatmap:
 		data -- data dictionary
 		return -- True if set, False if not set
 		"""
+		self.artist = data['artist'] or ""
+		self.title = data['title'] or ""
+		self.difficultyName = data['difficultyName'] or ""
+		self.artistUnicode = data['artistUnicode'] or self.artist
+		self.titleUnicode = data['titleUnicode'] or self.title
 		self.songName = data["song_name"]
 		self.fileMD5 = data["beatmap_md5"]
 		self.rankedStatus = int(data["ranked"])
@@ -258,11 +275,14 @@ class beatmap:
 		# We have data from osu!api, set beatmap data
 		obtainUnixClock = lambda t: int(time.mktime(datetime.datetime.strptime(t, "%Y-%m-%d %H:%M:%S").timetuple()))
 		log.debug("Got beatmap data from osu!api")
-		self.songName = "{} - {} [{}]".format(mainData["artist"], mainData["title"], mainData["version"])
+		self.artist, self.title = mainData['artist'] or '', mainData['title'] or ''
+		self.difficultyName = mainData['version'] or ''
+		self.artistUnicode, self.titleUnicode = mainData['artist_unicode'] or self.artist, mainData['title_unicode'], self.title
+		self.songName = "{} - {} [{}]".format(self.artist, self.title, self.difficultyName)
 		self.fileName = "{} - {} ({}) [{}].osu".format(
-			mainData["artist"], mainData["title"], mainData["creator"], mainData["version"]
+			self.artist, self.title, mainData["creator"], self.difficultyName,
 		).replace("\\", "")
-		self.displayTitle = f"[bold:0,size:20]{mainData['artist_unicode'] or mainData['artist']}|{mainData['title_unicode'] or mainData['title']}"
+		self.displayTitle = f"[bold:0,size:20]{self.artistUnicode}|{self.titleUnicode}"
 		self.fileMD5 = md5
 		
 		self.creatorID = int(mainData['creator_id'])
@@ -357,7 +377,6 @@ class beatmap:
 				log.info('|'.join(end_data))
 			except Exception:
 				pass
-
 		# Return the header
 		return data
 		# return '|'.join(end_data)
