@@ -270,7 +270,7 @@ class score:
 			# Get userID
 			userID = userUtils.getID(self.playerName)
 			# Make sure we don't have another score identical to this one
-			duplicate = glob.db.fetch("SELECT id FROM scores WHERE userid = %s AND beatmap_md5 = %s AND play_mode = %s AND score = %s AND checksum = %s LIMIT 1", [userID, self.fileMd5, self.gameMode, self.score, self.scoreChecksum])
+			duplicate = glob.db.fetch("SELECT id FROM scores_relax WHERE userid = %s AND beatmap_md5 = %s AND play_mode = %s AND score = %s AND checksum = %s LIMIT 1", [userID, self.fileMd5, self.gameMode, self.score, self.scoreChecksum])
 			if duplicate is not None:
 				# Found same score in db. Don't save this score.
 				self.completed = -1
