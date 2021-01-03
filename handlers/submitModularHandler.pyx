@@ -242,7 +242,7 @@ class handler(requestsManager.asyncRequestHandler):
 				relax = 1 if used_mods & 128 else 0
 				
 				unrestricted_user = userUtils.noPPLimit(userID, relax)
-				null_over_pp = glob.conf.extra['lets']['submit'].fetch('null-over-pp',False)
+				null_over_pp = glob.conf.extra['lets']['submit'].get('null-over-pp',False)
 				null_mode_pp = limit_pp <= 0
 				
 				if null_mode_pp:
