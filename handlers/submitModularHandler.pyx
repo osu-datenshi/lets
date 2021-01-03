@@ -363,7 +363,7 @@ class handler(requestsManager.asyncRequestHandler):
 				for ctrl in all_controls:
 					if over_controls:
 						break
-					over_controls = over_controls or len(filter(bool, ctrl) > 1)
+					over_controls = over_controls or (len([c for c in ctrl if c]) > 1)
 				return False or \
 					((s.mods & mods.HARDROCK) and (s.mods & mods.EASY)) or \
 					over_controls or \
