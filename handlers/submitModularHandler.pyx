@@ -696,7 +696,7 @@ class handler(requestsManager.asyncRequestHandler):
 					embed = DiscordEmbed(title='New score Achieved!!', description='[{}] Achieved #1 on mode **{}**, {} +{}!'.format(discordMode, gameModes.getGamemodeFull(s.gameMode), beatmapInfo.songName.encode().decode("ASCII", "ignore"), ScoreMods), color=800080)
 					embed.set_author(name='{}'.format(username.encode().decode("ASCII", "ignore")), url='https://osu.troke.id/{}/{}'.format(userLink, userID), icon_url='https://a.troke.id/{}'.format(userID))
 					embed.add_embed_field(name='Accuracy: {}%'.format(s.accuracy * 100), value='Combo: {}{}'.format(s.maxCombo, ('/{}'.format(beatmapInfo.maxCombo) if s.gameMode != gameModes.MANIA else '')))
-					embed.add_embed_field(name='Total: {}pp'.format(float("{0:.2f}".format(s.pp))), value='Gained: +{}pp'.format(float("{0:.2f}".format(ppGained))))
+					embed.add_embed_field(name='Total: {:.2f}pp'.format(s.pp), value='Gained: {:+.2f}pp'.format(ppGained))
 					embed.add_embed_field(name='Played by: {}'.format(username.encode().decode("ASCII", "ignore")), value="[Go to user's profile]({}/rx/u/{})".format(glob.conf.config["server"]["serverurl"], userID))
 					embed.set_thumbnail(url='https://b.ppy.sh/thumb/{}.jpg'.format(beatmapInfo.beatmapSetID))
 					webhook.add_embed(embed)
