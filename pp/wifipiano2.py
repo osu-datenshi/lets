@@ -47,8 +47,8 @@ class piano:
 			# Doubles score if EZ/HT
 			if scoreMods & mods.EASY != 0:
 				scoreMultiplier *= 0.50
-			#if scoreMods & mods.HALFTIME != 0:
-			#	scoreMultiplier *= 0.50
+			if scoreMods & mods.HALFTIME != 0:
+				scoreMultiplier *= 0.50
 
 			# Calculate strain PP
 			if scoreMultiplier <= 0:
@@ -82,14 +82,14 @@ class piano:
 				hitWindow300 *= 1.4
 
 			# Fiddles with DT and HT to make them match hitWindow300's ingame.
-			if scoreMods & mods.DOUBLETIME or mods.NIGHTCORE != 0:
+			if scoreMods & mods.DOUBLETIME | mods.NIGHTCORE != 0:
 				hitWindow300 *= 1.5
 			elif scoreMods & mods.HALFTIME != 0:
 				hitWindow300 *= 0.75
 
 			# makes hit window match what it is ingame.
 			hitWindow300 = int(hitWindow300) + 0.5
-			if scoreMods & mods.DOUBLETIME or mods.NIGHTCORE != 0:
+			if scoreMods & mods.DOUBLETIME | mods.NIGHTCORE != 0:
 				hitWindow300 /= 1.5
 			elif scoreMods & mods.HALFTIME != 0:
 				hitWindow300 /= 0.75
@@ -106,7 +106,7 @@ class piano:
 				multiplier *= 0.95
 			if scoreMods & mods.EASY != 0:
 				multiplier *= 0.50
-			if scoreMods & mods.DOUBLETIME or mods.NIGHTCORE != 0:
+			if scoreMods & mods.DOUBLETIME | mods.NIGHTCORE != 0:
 				multiplier *= 1.45
 			pp = pow(pow(strainPP, 1.1) + pow(accPP, 1.1), 1.0 / 1.1) * multiplier
 			log.debug("[WIFIPIANO2] Calculated PP: {}".format(pp))
