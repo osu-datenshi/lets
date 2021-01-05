@@ -14,3 +14,6 @@
 	path = pp/catch_the_pp
 	url = https://github.com/osuthailand/catch-the-pp.git
 	branch = cython
+[submodule "pp/osu-tools"]
+	path = pp/osu-tools
+	url = https://github.com/osu-datenshi/osu-tools.git
