@@ -180,7 +180,7 @@ if __name__ == "__main__":
 			".data/catch_the_pp",
 			".data/catch_the_pp/beatmaps"
 			".data/omppc",
-			".data/omppc/beatmaps"
+			".data/omppc/beatmaps",
 			glob.conf.config["server"]["replayspath"],
 			"{}_relax".format(glob.conf.config["server"]["replayspath"]),
 			glob.conf.config["server"]["beatmapspath"],
