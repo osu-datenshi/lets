@@ -1,7 +1,7 @@
 from common.constants import gameModes
 from pp import rippoppai
 from pp import relaxoppai
-from pp import osuperfomance
+from pp import osuperfomanc
 
 PP_CALCULATORS = {
     gameModes.STD: rippoppai.oppai,
