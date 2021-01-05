@@ -38,7 +38,7 @@ class handler(requestsManager.asyncRequestHandler):
 			for key, _ in self.request.arguments.items():
 				args[key] = self.get_argument(key)
 
-			response = requests.get("https://datenshibm.herokuapp.com:32767/web/osu-search-set.php?{}".format(urlencode(args)))
+			response = requests.get("https://datenshibm.herokuapp.com/web/osu-search-set.php?{}".format(urlencode(args)))
 			self.write(response.text)
 		except Exception as e:
 			log.error("search failed: {}".format(e))
