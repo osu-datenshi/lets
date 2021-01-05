@@ -176,7 +176,11 @@ if __name__ == "__main__":
 		paths = [
 			".data",
 			".data/oppai",
+			".data/oppai/beatmaps"
 			".data/catch_the_pp",
+			".data/catch_the_pp/beatmaps"
+			".data/omppc",
+			".data/omppc/beatmaps"
 			glob.conf.config["server"]["replayspath"],
 			"{}_relax".format(glob.conf.config["server"]["replayspath"]),
 			glob.conf.config["server"]["beatmapspath"],

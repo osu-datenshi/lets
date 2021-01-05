@@ -26,7 +26,6 @@ class handler(requestsManager.asyncRequestHandler):
 
 			self.set_status(302, "Moved Temporarily")
 			#URL CAN BE CHANGED TO ANYTHING
-			#SUCH AS https://akatsuki.pw/d/
 			url = "https://s.troke.id/d/{}{}".format(bid, "?novideo" if noVideo else "")
 			self.add_header("Location", url)
 			self.add_header("Cache-Control", "no-cache")
