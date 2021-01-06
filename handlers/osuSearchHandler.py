@@ -8,7 +8,7 @@ from constants import exceptions
 from common.ripple import userUtils
 from common.log import logUtils as log
 from common.web import requestsManager
-import objects import glob
+from objects import glob
 
 MODULE_NAME = "direct"
 class handler(requestsManager.asyncRequestHandler):
