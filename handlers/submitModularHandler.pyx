@@ -605,20 +605,16 @@ class handler(requestsManager.asyncRequestHandler):
 				log.debug("Generated output for online ranking screen!")
 				log.debug(output)
 				# TESTING TO USERLOGS
+				withSpecial = ''
 				if UsingRelax:
-					messages = [
-						f" Achieved #{newScoreboard.personalBestRank} rank with RX on ",
-						"[https://osu.troke.id/?u={} {}] achieved rank #1 with RX on [https://osu.ppy.sh/b/{} {}] ({})",
-						"{} has lost #1 RX on "
-					]
-				else:
-					messages = [
-						f" Achieved #{newScoreboard.personalBestRank} rank on ",
-						"[https://osu.troke.id/?u={} {}] achieved rank #1 on [https://osu.ppy.sh/b/{} {}] ({})",
-						"{} has lost #1 on "
-					]
+					withSpecial = 'with ' + ('RL' if userID == 3 else 'RX') # im still questioning who invented this shitty abbreviation.
+				messages = [
+					f" Achieved #{newScoreboard.personalBestRank} rank {withSpecial} on ",
+					"[https://osu.troke.id/?u={} {}] achieved rank #1 %s on [https://osu.ppy.sh/b/{} {}] ({})"%(withSpecial,),
+					"{} has lost #1 on "
+				]
 
-				if s.completed == 3 and restricted == False and beatmapInfo.rankedStatus >= rankedStatuses.RANKED and newScoreboard.personalBestRank > oldPersonalBestRank:
+				if s.completed == 3 and not restricted and beatmapInfo.rankedStatus >= rankedStatuses.RANKED and newScoreboard.personalBestRank > oldPersonalBestRank:
 					if newScoreboard.personalBestRank == 1 and len(newScoreboard.scores) > 2:
 						#woohoo we achieved #1, now we should say to #2 that he sniped!
 						userUtils.logUserLog(messages[2].format(newScoreboard.scores[2].playerName), s.fileMd5, newScoreboard.scores[2].playerUserID, s.gameMode, s.scoreID)
@@ -652,9 +648,10 @@ class handler(requestsManager.asyncRequestHandler):
 						beatmapInfo.songName.encode().decode("ASCII", "ignore"),
 						gameModes.getGamemodeFull(s.gameMode)
 						)
-								
-					params = urlencode({"k": glob.conf.config["server"]["apikey"], "to": "#announce", "msg": annmsg})
-					requests.get("{}/api/v1/fokabotMessage?{}".format(glob.conf.config["server"]["banchourl"], params))
+					
+					if not(userUtils.InvisibleBoard(userID) & 2):
+						params = urlencode({"k": glob.conf.config["server"]["apikey"], "to": "#announce", "msg": annmsg})
+						requests.get("{}/api/v1/fokabotMessage?{}".format(glob.conf.config["server"]["banchourl"], params))
 
 					# Let's send them to Discord too, because we cool :sunglasses:
 					# First, let's check what mod does the play have
