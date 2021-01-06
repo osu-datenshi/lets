@@ -666,10 +666,14 @@ class handler(requestsManager.asyncRequestHandler):
 						ScoreMods += "HD"
 					if s.mods & mods.HARDROCK:
 						ScoreMods += "HR"
-					if s.mods & mods.DOUBLETIME:
-						ScoreMods += "DT"
+					if s.mods & mods.SUDDENDEATH:
+						ScoreMods += "SD"
+					elif s.mods & mods.PERFECT:
+						ScoreMods += "PF"
 					if s.mods & mods.NIGHTCORE:
 						ScoreMods += "NC"
+					elif s.mods & mods.DOUBLETIME:
+						ScoreMods += "DT"
 					if s.mods & mods.HALFTIME:
 						ScoreMods += "HT"
 					if s.mods & mods.FLASHLIGHT:
