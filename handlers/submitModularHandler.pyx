@@ -693,7 +693,7 @@ class handler(requestsManager.asyncRequestHandler):
 					embed.set_author(name='{}'.format(username.encode().decode("ASCII", "ignore")), url='https://osu.troke.id/{}/{}'.format(userLink, userID), icon_url='https://a.troke.id/{}'.format(userID))
 					embed.add_embed_field(name='Accuracy: {}%'.format(s.accuracy * 100), value='Combo: {}{}'.format(s.maxCombo, ('/{}'.format(beatmapInfo.maxCombo) if s.gameMode != gameModes.MANIA else '')))
 					embed.add_embed_field(name='Total: {:.2f}pp'.format(s.pp), value='Gained: {:+.2f}pp'.format(ppGained))
-					embed.add_embed_field(name='Played by: {}'.format(username.encode().decode("ASCII", "ignore")), value="[Go to user's profile]({}/rx/u/{})".format(glob.conf.config["server"]["serverurl"], userID))
+					embed.add_embed_field(name='Played by: {}'.format(username.encode().decode("ASCII", "ignore")), value="[Go to user's profile]({}/{}/{})".format(glob.conf.config["server"]["serverurl"], userLink, userID))
 					embed.set_thumbnail(url='https://b.ppy.sh/thumb/{}.jpg'.format(beatmapInfo.beatmapSetID))
 					webhook.add_embed(embed)
 					log.info(f"[{discordMode}] Score masuk ke discord bro")
