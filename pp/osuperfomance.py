@@ -183,4 +183,4 @@ class OsuPerfomanceCalculation:
 
     @property
     def mapPath(self):
-        return f"{self.OPC_DATA}/beatmaps/{self.beatmap.beatmapID}.osu"
+        return f".data/beatmaps/{self.beatmap.beatmapID}.osu"

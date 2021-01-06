@@ -8,6 +8,7 @@ from constants import exceptions
 from common.ripple import userUtils
 from common.log import logUtils as log
 from common.web import requestsManager
+from objects import glob
 
 MODULE_NAME = "direct_np"
 class handler(requestsManager.asyncRequestHandler):
@@ -38,7 +39,7 @@ class handler(requestsManager.asyncRequestHandler):
 			for key, _ in self.request.arguments.items():
 				args[key] = self.get_argument(key)
 
-			response = requests.get("http://localhost:32767/web/osu-search-set.php?{}".format(urlencode(args)))
+			response = requests.get("{}/web/osu-search-set.php?{}".format(glob.conf.config["beatmapserver"]["domain"], urlencode(args)))
 			self.write(response.text)
 		except Exception as e:
 			log.error("search failed: {}".format(e))
