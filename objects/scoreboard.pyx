@@ -77,7 +77,7 @@ class baseScoreBoard:
 		cdef str friends = ""
 		cdef str order = ""
 		cdef str limit = ""
-		select = "SELECT id FROM %(score_table)s WHERE userid = %(userid)s AND beatmap_md5 = %(md5)s AND play_mode = %(mode)s AND completed = 3"
+		select = "SELECT id FROM %(score_table)s WHERE userid = %(userid)s AND beatmap_md5 = \"%(md5)s\" AND play_mode = %(mode)s AND completed = 3"
 
 		# Mods
 		if self.mods > -1:
@@ -94,6 +94,7 @@ class baseScoreBoard:
 		# Build query, get params and run query
 		query = self.buildQuery(locals())
 		params = {'score_table': type(self).t['sl'], "userid": self.userID, "md5": self.beatmap.fileMD5, "mode": self.gameMode, "mods": self.mods}
+		print(query, params, query % params)
 		id_ = glob.db.fetch(query, params)
 		if id_ is None:
 			return None
@@ -226,7 +227,7 @@ class baseScoreBoard:
 		Ikr, that query is HUGE but xd
 		"""
 		# Before running the HUGE query, make sure we have a score on that map
-		cdef str query = "SELECT id FROM %(score_table)s WHERE beatmap_md5 = %(md5)s AND userid = %(userid)s AND play_mode = %(mode)s AND completed = 3"
+		cdef str query = "SELECT id FROM %(score_table)s WHERE beatmap_md5 = \"%(md5)s\" AND userid = %(userid)s AND play_mode = %(mode)s AND completed = 3"
 		# Mods
 		if self.mods > -1:
 			query += " AND %(score_table)s.mods = %(mods)s"
@@ -235,7 +236,9 @@ class baseScoreBoard:
 			query += " AND (%(score_table)s.userid IN (SELECT user2 FROM users_relationships WHERE user1 = %(userid)s) OR %(score_table)s.userid = %(userid)s)"
 		# Sort and limit at the end
 		query += " LIMIT 1"
-		hasScore = glob.db.fetch(query, {'score_table': type(self).t['sl'], "md5": f'"{self.beatmap.fileMD5}"', "userid": self.userID, "mode": self.gameMode, "mods": self.mods})
+		params = {'score_table': type(self).t['sl'], "md5": self.beatmap.fileMD5, "userid": self.userID, "mode": self.gameMode, "mods": self.mods}
+		print(query, params, query % params)
+		hasScore = glob.db.fetch(query, params)
 		if hasScore is None:
 			return
 
