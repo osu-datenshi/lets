@@ -1,12 +1,19 @@
 from objects import score
+from objects import scoreRelax #temporary until ripple bullshit fixed
 from common.ripple import userUtils
 from constants import rankedStatuses
 from common.constants import mods as modsEnum
 from objects import glob
 from objects import beatmap
 
-
-class scoreboard:
+class basescoreboard:
+	t = {
+		'sl': 'scores',
+		'us': 'users_stats',
+		'sm': score,
+	}
+	rl = 0
+	
 	def __init__(self, username, gameMode, beatmap, setScores = True, country = False, friends = False, mods = -1):
 		"""
 		Initialize a leaderboard object
@@ -26,17 +33,34 @@ class scoreboard:
 		self.country = country
 		self.friends = friends
 		self.mods = mods
-		self.relax = 0
-		self.ppboard = 0
-		if glob.conf.extra["lets"]["submit"]["loved-dont-give-pp"] and beatmap.rankedStatus == 5:
-			self.ppboard = 0
-		elif userUtils.PPBoard(self.userID, self.relax) == 1:
-			self.ppboard = 1
+		self.boardmode = 0
+		self.boardvis = 0
+		if 'BoardMode' in dir(userUtils):
+			self.boardmode = userUtils.BoardMode(self.userID, type(self).rl)
 		else:
-			self.ppboard = 0
+			if userUtils.PPBoard(self.userID, type(self).rl) == 1:
+				self._ppboard = 1
+			else:
+				self._ppboard = 0
+		if 'InvisibleBoard' in dir(userUtils):
+			self.boardvis = userUtils.InvisibleBoard(self.userID)
+		if glob.conf.extra["lets"]["submit"]["loved-dont-give-pp"] and beatmap.rankedStatus in (4, 5) and self.ppboard:
+			self.boardmode = 0
 		if setScores:
 			self.setScores()
-
+	
+	@property
+	def relax(self):
+		return type(self).rl
+	
+	@property
+	def ppboard(self):
+		return self.boardmode == 1
+	
+	@property
+	def isBoardVisibleToYou(self):
+		return self.boardvis & ~1
+	
 	@staticmethod
 	def buildQuery(params):
 		return "{select} {joins} {country} {mods} {friends} {order} {limit}".format(**params)
@@ -53,7 +77,7 @@ class scoreboard:
 		cdef str friends = ""
 		cdef str order = ""
 		cdef str limit = ""
-		select = "SELECT id FROM scores WHERE userid = %(userid)s AND beatmap_md5 = %(md5)s AND play_mode = %(mode)s AND completed = 3"
+		select = "SELECT id FROM %(score_table)s WHERE userid = %(userid)s AND beatmap_md5 = %(md5)s AND play_mode = %(mode)s AND completed = 3"
 
 		# Mods
 		if self.mods > -1:
@@ -61,7 +85,7 @@ class scoreboard:
 
 		# Friends ranking
 		if self.friends:
-			friends = "AND (scores.userid IN (SELECT user2 FROM users_relationships WHERE user1 = %(userid)s) OR scores.userid = %(userid)s)"
+			friends = "AND (%(score_table)s.userid IN (SELECT user2 FROM users_relationships WHERE user1 = %(userid)s) OR %(score_table)s.userid = %(userid)s)"
 
 		# Sort and limit at the end
 		order = "ORDER BY score DESC"
@@ -69,7 +93,7 @@ class scoreboard:
 
 		# Build query, get params and run query
 		query = self.buildQuery(locals())
-		params = {"userid": self.userID, "md5": self.beatmap.fileMD5, "mode": self.gameMode, "mods": self.mods}
+		params = {'score_table': type(self).t['sl'], "userid": self.userID, "md5": self.beatmap.fileMD5, "mode": self.gameMode, "mods": self.mods}
 		id_ = glob.db.fetch(query, params)
 		if id_ is None:
 			return None
@@ -102,7 +126,7 @@ class scoreboard:
 
 		# Output our personal best if found
 		if personalBestScore is not None:
-			s = score.score(personalBestScore)
+			s = type(self).t['sm'].score(personalBestScore)
 			self.scores[0] = s
 		else:
 			# No personal best
@@ -110,38 +134,41 @@ class scoreboard:
 
 		# Get top 50 scores
 		select = "SELECT *"
-		joins = "FROM scores STRAIGHT_JOIN users ON scores.userid = users.id STRAIGHT_JOIN users_stats ON users.id = users_stats.id WHERE scores.beatmap_md5 = %(beatmap_md5)s AND scores.play_mode = %(play_mode)s AND scores.completed = 3 AND (users.privileges & 1 > 0 OR users.id = %(userid)s)"
+		joins = "FROM %(score_table)s STRAIGHT_JOIN users ON %(score_table)s.userid = users.id STRAIGHT_JOIN %(stats_table)s ON users.id = %(stats_table)s.id WHERE %(score_table)s.beatmap_md5 = %(beatmap_md5)s AND %(score_table)s.play_mode = %(play_mode)s AND %(score_table)s.completed = 3 AND (users.privileges & 1 > 0 OR users.id = %(userid)s)"
 
 		# Country ranking
 		if self.country:
-			country = "AND users_stats.country = (SELECT country FROM users_stats WHERE id = %(userid)s LIMIT 1)"
+			country = "AND %(stats_table)s.country = (SELECT country FROM %(stats_table)s WHERE id = %(userid)s LIMIT 1)"
 		else:
 			country = ""
 
 		# Mods ranking (ignore auto, since we use it for pp sorting)
 		if self.mods > -1 and self.mods & modsEnum.AUTOPLAY == 0:
-			mods = "AND scores.mods = %(mods)s"
+			mods = "AND %(score_table)s.mods = %(mods)s"
 		else:
 			mods = ""
 
 		# Friends ranking
 		if self.friends:
-			friends = "AND (scores.userid IN (SELECT user2 FROM users_relationships WHERE user1 = %(userid)s) OR scores.userid = %(userid)s)"
+			friends = "AND (%(score_table)s.userid IN (SELECT user2 FROM users_relationships WHERE user1 = %(userid)s) OR %(score_table)s.userid = %(userid)s)"
 		else:
 			friends = ""
 
 		# Sort and limit at the end
-		if not self.ppboard and self.mods <= -1 or self.mods & modsEnum.AUTOPLAY == 0:
-			# Order by score if we aren't filtering by mods or autoplay mod is disabled
+		if (self.mods & modsEnum.AUTOPLAY) or (self.boardmode == 0 and self.mods < 0):
+			# Order by score if we aren't filtering by mods or autoplay mod is enabled
 			order = "ORDER BY score DESC"
-		elif self.mods & modsEnum.AUTOPLAY > 0 or self.ppboard:
+		elif self.boardmode == 1:
 			# Otherwise, filter by pp
 			order = "ORDER BY pp DESC"
 		limit = "LIMIT 50"
 
 		# Build query, get params and run query
 		query = self.buildQuery(locals())
-		params = {"beatmap_md5": self.beatmap.fileMD5, "play_mode": self.gameMode, "userid": self.userID, "mods": self.mods}
+		params = {
+		  'score_table': type(self).t['sl'], 'stats_table': type(self).t['us'],
+		  "beatmap_md5": self.beatmap.fileMD5, "play_mode": self.gameMode, "userid": self.userID, "mods": self.mods
+		}
 		topScores = glob.db.fetchAll(query, params)
 
 		# Set data for all scores
@@ -150,7 +177,7 @@ class scoreboard:
 		if topScores is not None:
 			for topScore in topScores:
 				# Create score object
-				s = score.score(topScore["id"], setData=False)
+				s = type(self).t['sm'].score(topScore["id"], setData=False)
 
 				# Set data and rank from topScores's row
 				s.setDataFromDict(topScore)
@@ -199,50 +226,50 @@ class scoreboard:
 		Ikr, that query is HUGE but xd
 		"""
 		# Before running the HUGE query, make sure we have a score on that map
-		cdef str query = "SELECT id FROM scores WHERE beatmap_md5 = %(md5)s AND userid = %(userid)s AND play_mode = %(mode)s AND completed = 3"
+		cdef str query = "SELECT id FROM %(score_table)s WHERE beatmap_md5 = %(md5)s AND userid = %(userid)s AND play_mode = %(mode)s AND completed = 3"
 		# Mods
 		if self.mods > -1:
-			query += " AND scores.mods = %(mods)s"
+			query += " AND %(score_table)s.mods = %(mods)s"
 		# Friends ranking
 		if self.friends:
-			query += " AND (scores.userid IN (SELECT user2 FROM users_relationships WHERE user1 = %(userid)s) OR scores.userid = %(userid)s)"
+			query += " AND (%(score_table)s.userid IN (SELECT user2 FROM users_relationships WHERE user1 = %(userid)s) OR %(score_table)s.userid = %(userid)s)"
 		# Sort and limit at the end
 		query += " LIMIT 1"
-		hasScore = glob.db.fetch(query, {"md5": self.beatmap.fileMD5, "userid": self.userID, "mode": self.gameMode, "mods": self.mods})
+		hasScore = glob.db.fetch(query, {'score_table': type(self).t['sl'], "md5": self.beatmap.fileMD5, "userid": self.userID, "mode": self.gameMode, "mods": self.mods})
 		if hasScore is None:
 			return
 
-		overwrite = self.ppboard and "pp" or "score"
+		overwrite = ['score', 'pp'][self.boardmode]
 		
 		# We have a score, run the huge query
 		# Base query
-		query = """SELECT COUNT(*) AS rank FROM scores 
-		STRAIGHT_JOIN users ON scores.userid = users.id 
-		STRAIGHT_JOIN users_stats ON users.id = users_stats.id 
-		WHERE scores.{0} >= (
-				SELECT {0} FROM scores 
-				WHERE beatmap_md5 = %(md5)s 
-				AND play_mode = %(mode)s 
-				AND completed = 3 
-				AND userid = %(userid)s 
+		query = """SELECT COUNT(*) AS rank FROM scores
+		STRAIGHT_JOIN users ON %(score_table)s.userid = users.id
+		STRAIGHT_JOIN %(stats_table)s ON users.id = %(stats_table)s.id
+		WHERE %(score_table)s.{0} >= (
+				SELECT {0} FROM %(score_table)s
+				WHERE beatmap_md5 = %(md5)s
+				AND play_mode = %(mode)s
+				AND completed = 3
+				AND userid = %(userid)s
 				LIMIT 1
-		) 
-		AND scores.beatmap_md5 = %(md5)s 
-		AND scores.play_mode = %(mode)s 
-		AND scores.completed = 3 
+		)
+		AND %(score_table)s.beatmap_md5 = %(md5)s
+		AND %(score_table)s.play_mode = %(mode)s
+		AND %(score_table)s.completed = 3
 		AND users.privileges & 1 > 0""".format(overwrite)
 		# Country
 		if self.country:
-			query += " AND users_stats.country = (SELECT country FROM users_stats WHERE id = %(userid)s LIMIT 1)"
+			query += " AND %(stats_table)s.country = (SELECT country FROM %(stats_table)s WHERE id = %(userid)s LIMIT 1)"
 		# Mods
 		if self.mods > -1:
-			query += " AND scores.mods = %(mods)s"
+			query += " AND %(score_table)s.mods = %(mods)s"
 		# Friends
 		if self.friends:
-			query += " AND (scores.userid IN (SELECT user2 FROM users_relationships WHERE user1 = %(userid)s) OR scores.userid = %(userid)s)"
+			query += " AND (%(score_table)s.userid IN (SELECT user2 FROM users_relationships WHERE user1 = %(userid)s) OR %(score_table)s.userid = %(userid)s)"
 		# Sort and limit at the end
 		query += " ORDER BY {} DESC LIMIT 1".format(overwrite)
-		result = glob.db.fetch(query, {"md5": self.beatmap.fileMD5, "userid": self.userID, "mode": self.gameMode, "mods": self.mods})
+		result = glob.db.fetch(query, {'score_table': type(self).t['sl'], 'stats_table': type(self).t['us'], "md5": self.beatmap.fileMD5, "userid": self.userID, "mode": self.gameMode, "mods": self.mods})
 		if result is not None:
 			self.personalBestRank = result["rank"]
 
@@ -265,7 +292,19 @@ class scoreboard:
 			data += self.scores[0].getData(pp=self.ppboard)
 
 		# Output top 50 scores
-		for i in self.scores[1:]:
-			data += i.getData(pp=self.ppboard or (self.mods > -1 and self.mods & modsEnum.AUTOPLAY > 0))
+		if self.isBoardVisibleToYou:
+			for i in self.scores[1:]:
+				data += i.getData(pp=(self.ppboard and self.mods >= 0) and self.mods & modsEnum.AUTOPLAY == 0)
 
 		return data
+	
+class standard(baseScoreBoard):
+	pass
+
+class relax(baseScoreBoard):
+	t['sl'] = 'scores_relax'
+	# sorry what??? SORRY WHAT???? this sphagett code.
+	# please refer to original scoreboardRelax.pyx for this stupidity.
+	# t['us'] = 'ER_EKS_stats' # dumbest abbreviation after EEEEEEEEEEEEEEZEEEEEEEEEEEEEEEEEEEE
+	t['sm'] = scoreRelax
+	rl = 1

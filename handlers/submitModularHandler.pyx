@@ -32,7 +32,6 @@ from objects import glob
 from objects import score
 from objects import scoreboard
 from objects import scoreRelax
-from objects import scoreboardRelax
 from objects.charts import BeatmapChart, OverallChart
 from secret import butterCake
 from discord_webhook import DiscordWebhook, DiscordEmbed
@@ -274,11 +273,14 @@ class handler(requestsManager.asyncRequestHandler):
 				return
 			
 			# Right before submitting the score, get the personal best score object (we need it for charts)
+			scoreboardClass = scoreboard.standard
+			if UsingRelax:
+				scoreboardClass = scoreboard.relax
 			if s.passed and s.oldPersonalBest > 0:
 				oldPersonalBestRank = glob.personalBestCacheRX.get(userID, s.fileMd5) if UsingRelax else glob.personalBestCache.get(userID, s.fileMd5)
 				if oldPersonalBestRank == 0:
 					# oldPersonalBestRank not found in cache, get it from db through a scoreboard object
-					oldScoreboard = scoreboardRelax.scoreboardRelax(username, s.gameMode, beatmapInfo, False) if UsingRelax else scoreboard.scoreboard(username, s.gameMode, beatmapInfo, False)
+					oldScoreboard = scoreboardClass(username, s.gameMode, beatmapInfo, False)
 					oldScoreboard.setPersonalBestRank()
 					oldPersonalBestRank = max(oldScoreboard.personalBestRank, 0)
 				oldPersonalBest = scoreRelax.score(s.oldPersonalBest, oldPersonalBestRank) if UsingRelax else score.score(s.oldPersonalBest, oldPersonalBestRank)
@@ -528,10 +530,7 @@ class handler(requestsManager.asyncRequestHandler):
 				glob.redis.publish("peppy:update_cached_stats", userID)
 
 				# Get personal best after submitting the score
-				if UsingRelax:
-					newScoreboard = scoreboardRelax.scoreboardRelax(username, s.gameMode, beatmapInfo, False)
-				else:
-					newScoreboard = scoreboard.scoreboard(username, s.gameMode, beatmapInfo, False)
+				newScoreboard = scoreboardClass(username, s.gameMode, beatmapInfo, False)
 
 				newScoreboard.setPersonalBestRank()
 				personalBestID = newScoreboard.getPersonalBest()
@@ -685,7 +684,7 @@ class handler(requestsManager.asyncRequestHandler):
 					if s.mods & mods.RELAX:
 						ScoreMods += "RL" if userID == 3 else "RX"
 					if s.mods & mods.RELAX2:
-						ScoreMods += "ATP" if userID == 3 else "AP"
+						ScoreMods += "ATP" if userID == 3 else "AP" # i had to ATP because AP stands for "ALL PERFECT" in my brain, thanks SEGAwon.
 
 					# Second, get the webhook link from config
 					discordLink = 'rxscore' if UsingRelax else 'score'
