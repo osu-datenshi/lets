@@ -6,7 +6,7 @@ from common.constants import mods as modsEnum
 from objects import glob
 from objects import beatmap
 
-class basescoreboard:
+class baseScoreBoard:
 	t = {
 		'sl': 'scores',
 		'us': 'users_stats',
