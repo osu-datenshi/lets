@@ -59,7 +59,7 @@ class baseScoreBoard:
 	
 	@property
 	def isBoardVisibleToYou(self):
-		return self.boardvis & ~1
+		return not(self.boardvis & 1)
 	
 	@staticmethod
 	def buildQuery(params):
@@ -96,6 +96,9 @@ class baseScoreBoard:
 		query = self.buildQuery(locals()).replace('%(score_table)s',score_table)
 		params = {"userid": self.userID, "md5": self.beatmap.fileMD5, "mode": self.gameMode, "mods": self.mods}
 		id_ = glob.db.fetch(query, params)
+		print(query)
+		print(query % params)
+		print(id_)
 		if id_ is None:
 			return None
 		return id_["id"]
@@ -302,6 +305,8 @@ class baseScoreBoard:
 		if self.isBoardVisibleToYou:
 			for i in self.scores[1:]:
 				data += i.getData(pp=(self.ppboard and self.mods >= 0) and self.mods & modsEnum.AUTOPLAY == 0)
+		else:
+			log.info(f"User {self.userID} had their leaderboard hidden from theirs.")
 
 		return data
 	
