@@ -302,6 +302,7 @@ class standard(baseScoreBoard):
 	pass
 
 class relax(baseScoreBoard):
+	t = baseScoreBoard.t.copy()
 	t['sl'] = 'scores_relax'
 	# sorry what??? SORRY WHAT???? this sphagett code.
 	# please refer to original scoreboardRelax.pyx for this stupidity.
