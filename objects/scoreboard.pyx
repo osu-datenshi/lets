@@ -78,7 +78,7 @@ class baseScoreBoard:
 		cdef str order = ""
 		cdef str limit = ""
 		score_table = type(self).t['sl']
-		select = "SELECT id FROM %(score_table)s WHERE userid = %(userid)s AND beatmap_md5 = \"%(md5)s\" AND play_mode = %(mode)s AND completed = 3"
+		select = "SELECT id FROM %(score_table)s WHERE userid = %(userid)s AND beatmap_md5 = %(md5)s AND play_mode = %(mode)s AND completed = 3"
 
 		# Mods
 		if self.mods > -1:
@@ -233,7 +233,7 @@ class baseScoreBoard:
 		score_table = type(self).t['sl']
 		stats_table = type(self).t['us']
 		# Before running the HUGE query, make sure we have a score on that map
-		cdef str query = "SELECT id FROM %(score_table)s WHERE beatmap_md5 = \"%(md5)s\" AND userid = %(userid)s AND play_mode = %(mode)s AND completed = 3"
+		cdef str query = "SELECT id FROM %(score_table)s WHERE beatmap_md5 = %(md5)s AND userid = %(userid)s AND play_mode = %(mode)s AND completed = 3"
 		# Mods
 		if self.mods > -1:
 			query += " AND %(score_table)s.mods = %(mods)s"
@@ -306,7 +306,7 @@ class baseScoreBoard:
 			for i in self.scores[1:]:
 				data += i.getData(pp=(self.ppboard and self.mods >= 0) and self.mods & modsEnum.AUTOPLAY == 0)
 		else:
-			log.info(f"User {self.userID} had their leaderboard hidden from theirs.")
+			print(f"User {self.userID} had their leaderboard hidden from theirs.")
 
 		return data
 	
