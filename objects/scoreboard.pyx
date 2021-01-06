@@ -77,6 +77,7 @@ class baseScoreBoard:
 		cdef str friends = ""
 		cdef str order = ""
 		cdef str limit = ""
+		score_table = type(self).t['sl']
 		select = "SELECT id FROM %(score_table)s WHERE userid = %(userid)s AND beatmap_md5 = \"%(md5)s\" AND play_mode = %(mode)s AND completed = 3"
 
 		# Mods
@@ -92,9 +93,8 @@ class baseScoreBoard:
 		limit = "LIMIT 1"
 
 		# Build query, get params and run query
-		query = self.buildQuery(locals())
-		params = {'score_table': type(self).t['sl'], "userid": self.userID, "md5": self.beatmap.fileMD5, "mode": self.gameMode, "mods": self.mods}
-		print(query, params, query % params)
+		query = self.buildQuery(locals()).replace('%(score_table)s',score_table)
+		params = {"userid": self.userID, "md5": self.beatmap.fileMD5, "mode": self.gameMode, "mods": self.mods}
 		id_ = glob.db.fetch(query, params)
 		if id_ is None:
 			return None
@@ -134,6 +134,8 @@ class baseScoreBoard:
 			self.scores[0] = -1
 
 		# Get top 50 scores
+		score_table = type(self).t['sl']
+		stats_table = type(self).t['us']
 		select = "SELECT *"
 		joins = "FROM %(score_table)s STRAIGHT_JOIN users ON %(score_table)s.userid = users.id STRAIGHT_JOIN %(stats_table)s ON users.id = %(stats_table)s.id WHERE %(score_table)s.beatmap_md5 = %(beatmap_md5)s AND %(score_table)s.play_mode = %(play_mode)s AND %(score_table)s.completed = 3 AND (users.privileges & 1 > 0 OR users.id = %(userid)s)"
 
@@ -165,9 +167,8 @@ class baseScoreBoard:
 		limit = "LIMIT 50"
 
 		# Build query, get params and run query
-		query = self.buildQuery(locals())
+		query = self.buildQuery(locals()).replace('%(score_table)s',score_table).replace('%(stats_table)s',stats_table)
 		params = {
-		  'score_table': type(self).t['sl'], 'stats_table': type(self).t['us'],
 		  "beatmap_md5": self.beatmap.fileMD5, "play_mode": self.gameMode, "userid": self.userID, "mods": self.mods
 		}
 		topScores = glob.db.fetchAll(query, params)
@@ -226,6 +227,8 @@ class baseScoreBoard:
 		Set personal best rank ONLY
 		Ikr, that query is HUGE but xd
 		"""
+		score_table = type(self).t['sl']
+		stats_table = type(self).t['us']
 		# Before running the HUGE query, make sure we have a score on that map
 		cdef str query = "SELECT id FROM %(score_table)s WHERE beatmap_md5 = \"%(md5)s\" AND userid = %(userid)s AND play_mode = %(mode)s AND completed = 3"
 		# Mods
@@ -236,8 +239,8 @@ class baseScoreBoard:
 			query += " AND (%(score_table)s.userid IN (SELECT user2 FROM users_relationships WHERE user1 = %(userid)s) OR %(score_table)s.userid = %(userid)s)"
 		# Sort and limit at the end
 		query += " LIMIT 1"
-		params = {'score_table': type(self).t['sl'], "md5": self.beatmap.fileMD5, "userid": self.userID, "mode": self.gameMode, "mods": self.mods}
-		print(query, params, query % params)
+		query = query.replace('%(score_table)s',score_table)
+		params = {"md5": self.beatmap.fileMD5, "userid": self.userID, "mode": self.gameMode, "mods": self.mods}
 		hasScore = glob.db.fetch(query, params)
 		if hasScore is None:
 			return
@@ -272,7 +275,8 @@ class baseScoreBoard:
 			query += " AND (%(score_table)s.userid IN (SELECT user2 FROM users_relationships WHERE user1 = %(userid)s) OR %(score_table)s.userid = %(userid)s)"
 		# Sort and limit at the end
 		query += " ORDER BY {} DESC LIMIT 1".format(overwrite)
-		result = glob.db.fetch(query, {'score_table': type(self).t['sl'], 'stats_table': type(self).t['us'], "md5": self.beatmap.fileMD5, "userid": self.userID, "mode": self.gameMode, "mods": self.mods})
+		query = query.replace('%(score_table)s',score_table).replace('%(stats_table)s',stats_table)
+		result = glob.db.fetch(query, {"md5": self.beatmap.fileMD5, "userid": self.userID, "mode": self.gameMode, "mods": self.mods})
 		if result is not None:
 			self.personalBestRank = result["rank"]
 
