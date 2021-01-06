@@ -76,6 +76,8 @@ class config:
 			self.config.get("osuapi", "apiurl")
 			self.config.get("osuapi", "apikey")
 
+			self.config.get("beatmapserver", "domain")
+
 			self.config.get("beatconnect", "enable")
 			self.config.get("beatconnect", "apikey")
 

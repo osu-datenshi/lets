@@ -314,7 +314,10 @@ if __name__ == "__main__":
 		# DUMMY TEST BUAT GA CLOSE CONNECTION KE MYSQL CONNECT thx to @ReiFan49
 		def ping():
 				try:
-					glob.db.execute("SELECT 1+1")
+					#glob.db.execute("SELECT 1+1")
+					#SOLUSI BIAR CEPAT MENINGGAL
+					dispose()
+					os.execv(sys.executable, [sys.executable] + sys.argv)
 					log.info("[AUTOMATED QUERY] has been execute!")
 				except:
 					log.info("[AUTOMATED QUERY] error! the connection will restart!")
