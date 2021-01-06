@@ -96,9 +96,6 @@ class baseScoreBoard:
 		query = self.buildQuery(locals()).replace('%(score_table)s',score_table)
 		params = {"userid": self.userID, "md5": self.beatmap.fileMD5, "mode": self.gameMode, "mods": self.mods}
 		id_ = glob.db.fetch(query, params)
-		print(query)
-		print(query % params)
-		print(id_)
 		if id_ is None:
 			return None
 		return id_["id"]
