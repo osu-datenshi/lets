@@ -226,7 +226,7 @@ class baseScoreBoard:
 		Ikr, that query is HUGE but xd
 		"""
 		# Before running the HUGE query, make sure we have a score on that map
-		cdef str query = "SELECT id FROM %(score_table)s WHERE beatmap_md5 = %(md5)s AND userid = %(userid)s AND play_mode = %(mode)s AND completed = 3"
+		cdef str query = "SELECT id FROM %(score_table)s WHERE beatmap_md5 = '%(md5)s' AND userid = %(userid)s AND play_mode = %(mode)s AND completed = 3"
 		# Mods
 		if self.mods > -1:
 			query += " AND %(score_table)s.mods = %(mods)s"
@@ -243,7 +243,7 @@ class baseScoreBoard:
 		
 		# We have a score, run the huge query
 		# Base query
-		query = """SELECT COUNT(*) AS rank FROM scores
+		query = """SELECT COUNT(*) AS rank FROM %(score_table)s
 		STRAIGHT_JOIN users ON %(score_table)s.userid = users.id
 		STRAIGHT_JOIN %(stats_table)s ON users.id = %(stats_table)s.id
 		WHERE %(score_table)s.{0} >= (
