@@ -1,5 +1,4 @@
 from objects import score
-from objects import scoreRelax #temporary until ripple bullshit fixed
 from common.ripple import userUtils
 from constants import rankedStatuses
 from common.constants import mods as modsEnum
@@ -11,7 +10,7 @@ class baseScoreBoard:
 	t = {
 		'sl': 'scores',
 		'us': 'users_stats',
-		'sm': score,
+		'sm': score.standardScore,
 	}
 	rl = 0
 	
@@ -41,6 +40,7 @@ class baseScoreBoard:
 		else:
 			if userUtils.PPBoard(self.userID, type(self).rl) == 1:
 				self._ppboard = 1
+				self.boardmode = 1
 			else:
 				self._ppboard = 0
 		if 'InvisibleBoard' in dir(userUtils):
@@ -64,7 +64,9 @@ class baseScoreBoard:
 	
 	@property
 	def forcedScore(self):
-		return self.mods >= 0 or self.mods & modsEnum.AUTOPLAY
+		if self.mods < 0:
+			return False
+		return self.mods >= 0 or (self.mods & modsEnum.AUTOPLAY)
 	
 	@property
 	def seeLeaderboard(self):
@@ -136,7 +138,7 @@ class baseScoreBoard:
 
 		# Output our personal best if found
 		if personalBestScore is not None:
-			s = type(self).t['sm'].score(personalBestScore)
+			s = type(self).t['sm'](personalBestScore)
 			self.scores[0] = s
 		else:
 			# No personal best
@@ -188,7 +190,7 @@ class baseScoreBoard:
 		if topScores is not None:
 			for topScore in topScores:
 				# Create score object
-				s = type(self).t['sm'].score(topScore["id"], setData=False)
+				s = type(self).t['sm'](topScore["id"], setData=False)
 
 				# Set data and rank from topScores's row
 				s.setDataFromDict(topScore)
@@ -261,7 +263,7 @@ class baseScoreBoard:
 		query = """SELECT COUNT(*) AS rank FROM %(score_table)s as sc
 		STRAIGHT_JOIN users ON sc.userid = users.id
 		STRAIGHT_JOIN %(stats_table)s as st ON users.id = st.id
-		WHERE %(score_table)s.{0} >= (
+		WHERE sc.{0} >= (
 				SELECT {0} FROM %(score_table)s
 				WHERE beatmap_md5 = %(md5)s
 				AND play_mode = %(mode)s
@@ -298,6 +300,12 @@ class baseScoreBoard:
 		data = ""
 
 		# Output personal best
+		score_key = 'score'
+		if self.forcedScore or self.boardmode == 0:
+			pass
+		else:
+			score_key = 'score pp'.split()[self.boardmode]
+		
 		if self.scores[0] == -1:
 			# We don't have a personal best score
 			data += "\n"
@@ -305,15 +313,10 @@ class baseScoreBoard:
 			# Set personal best score rank
 			self.setPersonalBestRank()	# sets self.personalBestRank with the huge query
 			self.scores[0].setRank(self.personalBestRank)
-			data += self.scores[0].getData(pp=self.ppboard)
+			data += self.scores[0].getData(key=score_key)
 
 		# Output top 50 scores
 		if self.seeLeaderboard:
-			score_key = 'score'
-			if self.forcedScore or self.boardmode == 0:
-				pass
-			else:
-				score_key = 'score pp'.split()[self.boardmode]
 			for i in self.scores[1:]:
 				if not (self.seeEverything or i.visibleScore):
 					continue
@@ -332,5 +335,5 @@ class relax(baseScoreBoard):
 	# sorry what??? SORRY WHAT???? this sphagett code.
 	# please refer to original scoreboardRelax.pyx for this stupidity.
 	# t['us'] = 'ER_EKS_stats' # dumbest abbreviation after EEEEEEEEEEEEEEZEEEEEEEEEEEEEEEEEEEE
-	t['sm'] = score
+	t['sm'] = score.relaxScore
 	rl = 1

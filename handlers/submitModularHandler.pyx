@@ -280,7 +280,7 @@ class handler(requestsManager.asyncRequestHandler):
 					oldScoreboard = scoreboardClass(username, s.gameMode, beatmapInfo, False)
 					oldScoreboard.setPersonalBestRank()
 					oldPersonalBestRank = max(oldScoreboard.personalBestRank, 0)
-				oldPersonalBest = scoreClass.score(s.oldPersonalBest, oldPersonalBestRank)
+				oldPersonalBest = scoreClass(s.oldPersonalBest, oldPersonalBestRank)
 			else:
 				oldPersonalBestRank = 0
 				oldPersonalBest = None

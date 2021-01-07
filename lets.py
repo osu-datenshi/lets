@@ -33,7 +33,6 @@ from handlers import defaultHandler
 from handlers import downloadMapHandler
 from handlers import emptyHandler
 from handlers import getFullReplayHandler
-from handlers import getFullReplayHandlerRelax
 from handlers import getReplayHandler
 from handlers import getScoresHandler
 from handlers import getScreenshotHandler

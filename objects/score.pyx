@@ -295,7 +295,7 @@ class baseScore:
 					if score_key != 'score':
 						score_keys.insert(0, score_key)
 					personalBest = glob.db.fetch("SELECT id, {} FROM {} WHERE userid = %s AND beatmap_md5 = %s AND play_mode = %s AND completed = 3 LIMIT 1".format(
-						", ".format(score_keys)
+						", ".join(score_keys),
 						type(self).t['sl']
 					), [userID, self.fileMd5, self.gameMode])
 				if personalBest is None:
@@ -361,7 +361,7 @@ class baseScore:
 		self.pp = 0
 		if not precond:
 			return
-		if b.rankedStatus != rankedStatuses.UNKNOWN:
+		if b.rankedStatus == rankedStatuses.UNKNOWN:
 			return
 		if b.rankedStatus in RANKED_STATUS_COUNT:
 			calculator = type(self).PP_CALCULATORS[self.gameMode](b, self)
@@ -399,7 +399,7 @@ class PerfectScoreFactory:
 		:param game_mode: game mode number. Default: `gameModes.STD`
 		:return: `score` object
 		"""
-		s = score()
+		s = standardScore()
 		s.accuracy = 1.
 		# max combo cli param/arg gets omitted if it's < 0 and oppai/catch-the-pp set it to max combo.
 		# maniapp ignores max combo entirely.
