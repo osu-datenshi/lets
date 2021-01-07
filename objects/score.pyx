@@ -235,12 +235,13 @@ class baseScore:
 			self.setCompletedStatus()
 
 
-	def getData(self, pp=True):
+	# replaced with key for further overrides
+	def getData(self, key='score'):
 		"""Return score row relative to this score for getscores"""
 		return "{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|1\n".format(
 			self.scoreID,
 			self.playerName,
-			int(self.pp) if pp else self.score,
+			int(getattr(self, key)),
 			self.maxCombo,
 			self.c50,
 			self.c100,

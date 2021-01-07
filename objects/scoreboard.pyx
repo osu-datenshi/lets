@@ -44,7 +44,10 @@ class baseScoreBoard:
 				self._ppboard = 0
 		if 'InvisibleBoard' in dir(userUtils):
 			self.boardvis = userUtils.InvisibleBoard(self.userID)
-		if glob.conf.extra["lets"]["submit"]["loved-dont-give-pp"] and beatmap.rankedStatus in (4, 5) and self.ppboard:
+		if beatmap.rankedStatus in [5]:
+			if glob.conf.extra["lets"]["submit"]["loved-dont-give-pp"] and self.boardmode:
+				self.boardmode = 0
+		elif beatmap.rankedStatus in [4]:
 			self.boardmode = 0
 		if setScores:
 			self.setScores()
@@ -56,6 +59,10 @@ class baseScoreBoard:
 	@property
 	def ppboard(self):
 		return self.boardmode == 1
+	
+	@property
+	def forcedScore(self):
+		return self.mods >= 0 or self.mods & modsEnum.AUTOPLAY
 	
 	@property
 	def isBoardVisibleToYou(self):
@@ -78,7 +85,7 @@ class baseScoreBoard:
 		cdef str order = ""
 		cdef str limit = ""
 		score_table = type(self).t['sl']
-		select = "SELECT id FROM %(score_table)s WHERE userid = %(userid)s AND beatmap_md5 = %(md5)s AND play_mode = %(mode)s AND completed = 3"
+		select = "SELECT id FROM %(score_table)s as sc WHERE userid = %(userid)s AND beatmap_md5 = %(md5)s AND play_mode = %(mode)s AND completed = 3"
 
 		# Mods
 		if self.mods > -1:
@@ -86,7 +93,7 @@ class baseScoreBoard:
 
 		# Friends ranking
 		if self.friends:
-			friends = "AND (%(score_table)s.userid IN (SELECT user2 FROM users_relationships WHERE user1 = %(userid)s) OR %(score_table)s.userid = %(userid)s)"
+			friends = "AND (sc.userid IN (SELECT user2 FROM users_relationships WHERE user1 = %(userid)s) OR sc.userid = %(userid)s)"
 
 		# Sort and limit at the end
 		order = "ORDER BY score DESC"
@@ -137,28 +144,28 @@ class baseScoreBoard:
 		score_table = type(self).t['sl']
 		stats_table = type(self).t['us']
 		select = "SELECT *"
-		joins = "FROM %(score_table)s STRAIGHT_JOIN users ON %(score_table)s.userid = users.id STRAIGHT_JOIN %(stats_table)s ON users.id = %(stats_table)s.id WHERE %(score_table)s.beatmap_md5 = %(beatmap_md5)s AND %(score_table)s.play_mode = %(play_mode)s AND %(score_table)s.completed = 3 AND (users.privileges & 1 > 0 OR users.id = %(userid)s)"
+		joins = "FROM %(score_table)s as sc STRAIGHT_JOIN users ON sc.userid = users.id STRAIGHT_JOIN %(stats_table)s as st ON users.id = st.id WHERE sc.beatmap_md5 = %(beatmap_md5)s AND sc.play_mode = %(play_mode)s AND sc.completed = 3 AND (users.privileges & 1 > 0 OR users.id = %(userid)s)"
 
 		# Country ranking
 		if self.country:
-			country = "AND %(stats_table)s.country = (SELECT country FROM %(stats_table)s WHERE id = %(userid)s LIMIT 1)"
+			country = "AND st.country = (SELECT country FROM %(stats_table)s WHERE id = %(userid)s LIMIT 1)"
 		else:
 			country = ""
 
 		# Mods ranking (ignore auto, since we use it for pp sorting)
-		if self.mods > -1 and self.mods & modsEnum.AUTOPLAY == 0:
-			mods = "AND %(score_table)s.mods = %(mods)s"
+		if self.mods >= 0 and self.mods & modsEnum.AUTOPLAY == 0:
+			mods = "AND sc.mods = %(mods)s"
 		else:
 			mods = ""
 
 		# Friends ranking
 		if self.friends:
-			friends = "AND (%(score_table)s.userid IN (SELECT user2 FROM users_relationships WHERE user1 = %(userid)s) OR %(score_table)s.userid = %(userid)s)"
+			friends = "AND (sc.userid IN (SELECT user2 FROM users_relationships WHERE user1 = %(userid)s) OR sc.userid = %(userid)s)"
 		else:
 			friends = ""
 
 		# Sort and limit at the end
-		if (self.mods & modsEnum.AUTOPLAY) or (self.boardmode == 0 and self.mods < 0):
+		if self.forcedScore or (self.boardmode == 0):
 			# Order by score if we aren't filtering by mods or autoplay mod is enabled
 			order = "ORDER BY score DESC"
 		elif self.boardmode == 1:
@@ -230,13 +237,13 @@ class baseScoreBoard:
 		score_table = type(self).t['sl']
 		stats_table = type(self).t['us']
 		# Before running the HUGE query, make sure we have a score on that map
-		cdef str query = "SELECT id FROM %(score_table)s WHERE beatmap_md5 = %(md5)s AND userid = %(userid)s AND play_mode = %(mode)s AND completed = 3"
+		cdef str query = "SELECT id FROM %(score_table)s as sc WHERE beatmap_md5 = %(md5)s AND userid = %(userid)s AND play_mode = %(mode)s AND completed = 3"
 		# Mods
 		if self.mods > -1:
-			query += " AND %(score_table)s.mods = %(mods)s"
+			query += " AND sc.mods = %(mods)s"
 		# Friends ranking
 		if self.friends:
-			query += " AND (%(score_table)s.userid IN (SELECT user2 FROM users_relationships WHERE user1 = %(userid)s) OR %(score_table)s.userid = %(userid)s)"
+			query += " AND (sc.userid IN (SELECT user2 FROM users_relationships WHERE user1 = %(userid)s) OR sc.userid = %(userid)s)"
 		# Sort and limit at the end
 		query += " LIMIT 1"
 		query = query.replace('%(score_table)s',score_table)
@@ -249,9 +256,9 @@ class baseScoreBoard:
 		
 		# We have a score, run the huge query
 		# Base query
-		query = """SELECT COUNT(*) AS rank FROM %(score_table)s
-		STRAIGHT_JOIN users ON %(score_table)s.userid = users.id
-		STRAIGHT_JOIN %(stats_table)s ON users.id = %(stats_table)s.id
+		query = """SELECT COUNT(*) AS rank FROM %(score_table)s as sc
+		STRAIGHT_JOIN users ON sc.userid = users.id
+		STRAIGHT_JOIN %(stats_table)s as st ON users.id = st.id
 		WHERE %(score_table)s.{0} >= (
 				SELECT {0} FROM %(score_table)s
 				WHERE beatmap_md5 = %(md5)s
@@ -260,19 +267,19 @@ class baseScoreBoard:
 				AND userid = %(userid)s
 				LIMIT 1
 		)
-		AND %(score_table)s.beatmap_md5 = %(md5)s
-		AND %(score_table)s.play_mode = %(mode)s
-		AND %(score_table)s.completed = 3
+		AND sc.beatmap_md5 = %(md5)s
+		AND sc.play_mode = %(mode)s
+		AND sc.completed = 3
 		AND users.privileges & 1 > 0""".format(overwrite)
 		# Country
 		if self.country:
-			query += " AND %(stats_table)s.country = (SELECT country FROM %(stats_table)s WHERE id = %(userid)s LIMIT 1)"
+			query += " AND st.country = (SELECT country FROM %(stats_table)s WHERE id = %(userid)s LIMIT 1)"
 		# Mods
 		if self.mods > -1:
-			query += " AND %(score_table)s.mods = %(mods)s"
+			query += " AND st.mods = %(mods)s"
 		# Friends
 		if self.friends:
-			query += " AND (%(score_table)s.userid IN (SELECT user2 FROM users_relationships WHERE user1 = %(userid)s) OR %(score_table)s.userid = %(userid)s)"
+			query += " AND (sc.userid IN (SELECT user2 FROM users_relationships WHERE user1 = %(userid)s) OR sc.userid = %(userid)s)"
 		# Sort and limit at the end
 		query += " ORDER BY {} DESC LIMIT 1".format(overwrite)
 		query = query.replace('%(score_table)s',score_table).replace('%(stats_table)s',stats_table)
@@ -300,8 +307,13 @@ class baseScoreBoard:
 
 		# Output top 50 scores
 		if self.isBoardVisibleToYou:
+			score_key = 'score'
+			if self.forcedScore or self.boardmode == 0:
+				pass
+			else:
+				score_key = 'score pp'.split()[self.boardmode]
 			for i in self.scores[1:]:
-				data += i.getData(pp=(self.ppboard and self.mods >= 0) and self.mods & modsEnum.AUTOPLAY == 0)
+				data += i.getData(key=score_key)
 		else:
 			print(f"User {self.userID} had their leaderboard hidden from theirs.")
 
