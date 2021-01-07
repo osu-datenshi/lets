@@ -25,7 +25,6 @@ from helpers import aeshelper
 from helpers import replayHelper
 from helpers import replayHelperRelax
 from helpers import leaderboardHelper
-from helpers import leaderboardHelperRelax
 from helpers.generalHelper import zingonify, getHackByFlag
 from objects import beatmap
 from objects import glob
@@ -479,7 +478,7 @@ class handler(requestsManager.asyncRequestHandler):
 				if UsingRelax:
 					newUserStats = userUtils.getUserStatsRx(userID, s.gameMode)
 					glob.userStatsCacheRX.update(userID, s.gameMode, newUserStats)
-					leaderboardHelperRelax.update(userID, newUserStats["pp"], s.gameMode)
+					leaderboardHelper.update(userID, newUserStats["pp"], s.gameMode, relax=True)
 					maxCombo = userUtils.getMaxComboRX(userID, s.gameMode)
 				else:
 					newUserStats = userUtils.getUserStats(userID, s.gameMode)
@@ -489,12 +488,8 @@ class handler(requestsManager.asyncRequestHandler):
 
 				# Update leaderboard (global and country) if score/pp has changed
 				if s.completed == 3 and newUserStats["pp"] != oldUserStats["pp"]:
-					if UsingRelax:
-						leaderboardHelperRelax.update(userID, newUserStats["pp"], s.gameMode)
-						leaderboardHelperRelax.updateCountry(userID, newUserStats["pp"], s.gameMode)
-					else:
-						leaderboardHelper.update(userID, newUserStats["pp"], s.gameMode)
-						leaderboardHelper.updateCountry(userID, newUserStats["pp"], s.gameMode)
+					leaderboardHelper.update(userID, newUserStats["pp"], s.gameMode, relax=UsingRelax)
+					leaderboardHelper.updateCountry(userID, newUserStats["pp"], s.gameMode, relax=UsingRelax)
 
 			# Update total hits
 			if UsingRelax:
@@ -542,10 +537,7 @@ class handler(requestsManager.asyncRequestHandler):
 					currentPersonalBest = score.score(personalBestID, newScoreboard.personalBestRank)
 
 				# Get rank info (current rank, pp/score to next rank, user who is 1 rank above us)
-				if bool(s.mods & 128):
-					rankInfo = leaderboardHelperRelax.getRankInfo(userID, s.gameMode)
-				else:
-					rankInfo = leaderboardHelper.getRankInfo(userID, s.gameMode)
+				rankInfo = leaderboardHelper.getRankInfo(userID, s.gameMode, relax=s.mods & 128)
 
 				# Output dictionary
 				if newCharts:
