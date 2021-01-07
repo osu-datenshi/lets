@@ -47,7 +47,7 @@ class LwScore:
     """
     __slots__ = ("score_id", "pp")
 
-    def __init__(self, score_id: Optional[int]=None, pp: Optional[int]=None, score_: Optional[score.score]=None):
+    def __init__(self, score_id: Optional[int]=None, pp: Optional[int]=None, score_: Optional[score.standardScore]=None):
         """
         Initializes a new LwScore. Either score_id and pp OR just score must be provided.
 
@@ -223,7 +223,7 @@ class Worker:
         if start:
             self.threaded_work()
 
-    def recalc_score(self, score_data: Dict) -> score:
+    def recalc_score(self, score_data: Dict) -> score.baseScore:
         """
         Recalculates pp for a score
 
@@ -231,7 +231,7 @@ class Worker:
         :return: new `score` object, with `pp` attribute set to the new value
         """
         # Create score object and set its data
-        s: score.score = score.score()
+        s: score.baseScore = score.standardScore()
         s.setDataFromDict(score_data)
         s.passed = True
 

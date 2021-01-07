@@ -29,7 +29,6 @@ from objects import beatmap
 from objects import glob
 from objects import score
 from objects import scoreboard
-from objects import scoreRelax
 from objects.charts import BeatmapChart, OverallChart
 from secret import butterCake
 from discord_webhook import DiscordWebhook, DiscordEmbed
@@ -149,10 +148,10 @@ class handler(requestsManager.asyncRequestHandler):
 			else:
 				log.info("[VANILLA] {} has submitted a score on {}...".format(username, scoreData[0]))
 			
+			scoreClass = score.standardScore
 			if UsingRelax:
-				s = scoreRelax.score()
-			else:
-				s = score.score()
+				scoreClass = score.relaxScore
+			s = scoreClass()
 			s.setDataFromScoreData(scoreData, quit_=quit_, failed=failed)
 			s.playerUserID = userID
 
@@ -281,7 +280,7 @@ class handler(requestsManager.asyncRequestHandler):
 					oldScoreboard = scoreboardClass(username, s.gameMode, beatmapInfo, False)
 					oldScoreboard.setPersonalBestRank()
 					oldPersonalBestRank = max(oldScoreboard.personalBestRank, 0)
-				oldPersonalBest = scoreRelax.score(s.oldPersonalBest, oldPersonalBestRank) if UsingRelax else score.score(s.oldPersonalBest, oldPersonalBestRank)
+				oldPersonalBest = scoreClass.score(s.oldPersonalBest, oldPersonalBestRank)
 			else:
 				oldPersonalBestRank = 0
 				oldPersonalBest = None
@@ -528,10 +527,7 @@ class handler(requestsManager.asyncRequestHandler):
 				personalBestID = newScoreboard.getPersonalBest()
 				assert personalBestID is not None
 					
-				if UsingRelax:
-					currentPersonalBest = scoreRelax.score(personalBestID, newScoreboard.personalBestRank)
-				else:
-					currentPersonalBest = score.score(personalBestID, newScoreboard.personalBestRank)
+				currentPersonalBest = scoreClass(personalBestID, newScoreboard.personalBestRank)
 
 				# Get rank info (current rank, pp/score to next rank, user who is 1 rank above us)
 				rankInfo = leaderboardHelper.getRankInfo(userID, s.gameMode, relax=s.mods & 128)

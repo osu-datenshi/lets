@@ -11,8 +11,16 @@ from constants import rankedStatuses
 from common.ripple import scoreUtils
 from objects import glob
 
+RANKED_STATUS_COUNT   = [rankedStatuses.RANKED, rankedStatuses.APPROVED]
+RANKED_STATUS_PARTIAL = [rankedStatuses.LOVED]
+RANKED_STATUS_TEMP    = [rankedStatuses.QUALIFIED]
 
-class score:
+class baseScore:
+	PP_CALCULATORS = pp.PP_CALCULATORS
+	t = {
+		'sl': 'scores'
+	}
+	rl = False
 	__slots__ = ["scoreID", 'scoreChecksum', "playerName", "score", "maxCombo", "c50", "c100", "c300", "cMiss", "cKatu", "cGeki",
 				 "fullCombo", "mods", "playerUserID","rank","date", "hasReplay", "fileMd5", "passed", "playDateTime",
 				 "gameMode", "completed", "accuracy", "pp", "oldPersonalBest", "rankedScoreIncrease", "personalOldBestScore",
@@ -73,6 +81,10 @@ class score:
 		return x
 
 	@property
+	def r(self):
+		return type(self).rl
+	
+	@property
 	def fullPlayTime(self):
 		return self._fullPlayTime
 
@@ -101,38 +113,37 @@ class score:
 		"""
 		Calculate and set accuracy for that score
 		"""
+		self.accuracy = 0
+		hit_factors = []
+		hit_weights = []
 		if self.gameMode == 0:
 			# std
-			totalPoints = self.c50*50+self.c100*100+self.c300*300
-			totalHits = self.c300+self.c100+self.c50+self.cMiss
-			if totalHits == 0:
-				self.accuracy = 1
-			else:
-				self.accuracy = totalPoints/(totalHits*300)
+			hit_factors.extend('Miss 50 100 300'.split())
+			hit_weights.extend([0, 50, 100, 300])
 		elif self.gameMode == 1:
 			# taiko
-			totalPoints = (self.c100*50)+(self.c300*100)
-			totalHits = self.cMiss+self.c100+self.c300
-			if totalHits == 0:
-				self.accuracy = 1
-			else:
-				self.accuracy = totalPoints / (totalHits * 100)
+			hit_factors.extend('Miss 100 300'.split())
+			hit_weights.extend([0, 150, 300])
 		elif self.gameMode == 2:
 			# ctb
-			fruits = self.c300+self.c100+self.c50
-			totalFruits = fruits+self.cMiss+self.cKatu
-			if totalFruits == 0:
-				self.accuracy = 1
-			else:
-				self.accuracy = fruits / totalFruits
+			hit_factors.extend('Miss Katu 50 100 300'.split())
+			hit_weights.extend([0, 0, 1, 1, 1])
 		elif self.gameMode == 3:
 			# mania
-			totalPoints = self.c50*50+self.c100*100+self.cKatu*200+self.c300*300+self.cGeki*300
-			totalHits = self.cMiss+self.c50+self.c100+self.c300+self.cGeki+self.cKatu
-			self.accuracy = totalPoints / (totalHits * 300)
+			hit_factors.extend('Miss 50 100 Katu 300 Geki'.split())
+			hit_weights.extend([0, 50, 100, 200, 300, 300])
 		else:
 			# unknown gamemode
-			self.accuracy = 0
+			return
+		if not (hit_factors and hit_weights):
+			return
+		max_weight = max(hit_weights)
+		total_hits = sum(getattr(self, f"c{k}") for k in hit_factors)
+		if total_hits == 0:
+			self.accuracy = 1
+		else:
+			total_base = sum(hit_weights[i] * getattr(self, f"c{hit_factors[i]}") for i in range(len(hit_weights)))
+			self.accuracy = total_base / (total_hits * max_weight)
 
 	def setRank(self, rank):
 		"""
@@ -150,7 +161,8 @@ class score:
 		scoreID -- score ID
 		rank -- rank in scoreboard. Optional.
 		"""
-		data = glob.db.fetch("SELECT scores.*, users.username FROM scores LEFT JOIN users ON users.id = scores.userid WHERE scores.id = %s LIMIT 1", [scoreID])
+		
+		data = glob.db.fetch(f"SELECT s.*, users.username FROM {type(self).t['sl']} as s LEFT JOIN users ON users.id = s.userid WHERE s.id = %s LIMIT 1", [scoreID])
 		if data is not None:
 			self.setDataFromDict(data, rank)
 
@@ -260,23 +272,27 @@ class score:
 			# Get userID
 			userID = userUtils.getID(self.playerName)
 			# Make sure we don't have another score identical to this one
-			duplicate = glob.db.fetch("SELECT id FROM scores WHERE userid = %s AND beatmap_md5 = %s AND play_mode = %s AND score = %s AND checksum = %s LIMIT 1", [userID, self.fileMd5, self.gameMode, self.score, self.scoreChecksum])
+			duplicate = glob.db.fetch(f"SELECT id FROM {type(self).t['sl']} WHERE userid = %s AND beatmap_md5 = %s AND play_mode = %s AND score = %s AND checksum = %s LIMIT 1", [userID, self.fileMd5, self.gameMode, self.score, self.scoreChecksum])
 			if duplicate is not None:
 				# Found same score in db. Don't save this score.
 				self.completed = -1
 				return
 			
 			if self.passed:
-				
 				# No duplicates found.
 				# Get right "completed" value
-				if b.rankedStatus == rankedStatuses.LOVED and glob.conf.extra["lets"]["submit"]["loved-dont-give-pp"]:
-					personalBest = glob.db.fetch("SELECT id, score FROM scores WHERE userid = %s AND beatmap_md5 = %s AND play_mode = %s AND completed = 3 LIMIT 1", [userID, self.fileMd5, self.gameMode])
+				loved_nopp = glob.conf.extra["lets"]["submit"]["loved-dont-give-pp"]
+				score_key = glob.conf.extra["lets"]["submit"]["score-overwrite"]
+				if b.rankedStatus == rankedStatuses.LOVED and loved_nopp:
+					personalBest = glob.db.fetch(f"SELECT id, score FROM {type(self).t['sl']} WHERE userid = %s AND beatmap_md5 = %s AND play_mode = %s AND completed = 3 LIMIT 1", [userID, self.fileMd5, self.gameMode])
 				else:
-					personalBest = glob.db.fetch("SELECT id,{}score FROM scores WHERE userid = %s AND beatmap_md5 = %s AND play_mode = %s AND completed = 3 LIMIT 1".format(
-						glob.conf.extra["lets"]["submit"]["score-overwrite"] == "score" and " " or " {}, ".format(glob.conf.extra["lets"]["submit"]["score-overwrite"])
-					),
-					[userID, self.fileMd5, self.gameMode])
+					score_keys = ['score']
+					if score_key != 'score':
+						score_keys.insert(0, score_key)
+					personalBest = glob.db.fetch("SELECT id, {} FROM {} WHERE userid = %s AND beatmap_md5 = %s AND play_mode = %s AND completed = 3 LIMIT 1".format(
+						", ".format(score_keys)
+						type(self).t['sl']
+					), [userID, self.fileMd5, self.gameMode])
 				if personalBest is None:
 					# This is our first score on this map, so it's our best score
 					self.completed = 3
@@ -287,20 +303,20 @@ class score:
 					# Set old personal best and calculates PP
 					self.personalOldBestScore = personalBest["id"]
 					# Compare personal best's score with current score
-					if b.rankedStatus in [rankedStatuses.RANKED, rankedStatuses.APPROVED, rankedStatuses.QUALIFIED]:
+					count_override = False
+					if b.rankedStatus in RANKED_STATUS_COUNT:
+						count_override = True
+					elif b.rankedStatus in RANKED_STATUS_PARTIAL:
+						count_override = not loved_nopp
+					elif b.rankedStatus in RANKED_STATUS_TEMP:
+						pass
+					self.rankedScoreIncrease = self.score-personalBest["score"]
+					self.oldPersonalBest = personalBest["id"]
+					if count_override:
 						self.calculatePP()
-						self.rankedScoreIncrease = self.score-personalBest["score"]
-						self.oldPersonalBest = personalBest["id"]
-						self.completed = 3 if getattr(self, glob.conf.extra["lets"]["submit"]["score-overwrite"]) > personalBest[glob.conf.extra["lets"]["submit"]["score-overwrite"]] else 2
-					elif glob.conf.extra["lets"]["submit"]["loved-dont-give-pp"] and b.rankedStatus == rankedStatuses.LOVED:
-						self.rankedScoreIncrease = self.score-personalBest["score"]
-						self.oldPersonalBest = personalBest["id"]
+						self.completed = 3 if getattr(self, score_key) > personalBest[score_key] else 2
+					else:
 						self.completed = 3 if self.score > personalBest["score"] else 2
-					elif not glob.conf.extra["lets"]["submit"]["loved-dont-give-pp"] and b.rankedStatus == rankedStatuses.LOVED:
-						self.calculatePP()
-						self.rankedScoreIncrease = self.score-personalBest["score"]
-						self.oldPersonalBest = personalBest["id"]
-						self.completed = 3 if getattr(self, glob.conf.extra["lets"]["submit"]["score-overwrite"]) > personalBest[glob.conf.extra["lets"]["submit"]["score-overwrite"]] else 2
 			elif self.quit:
 				self.completed = 0
 			elif self.failed:
@@ -314,14 +330,14 @@ class score:
 		"""
 		# Add this score
 		if self.completed >= 0:
-			query = "INSERT INTO scores (id, beatmap_md5, checksum, userid, score, max_combo, full_combo, mods, 300_count, 100_count, 50_count, katus_count, gekis_count, misses_count, `time`, play_mode, playtime, completed, accuracy, pp) VALUES (NULL, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"
+			query = f"INSERT INTO {type(self).t['sl']} (id, beatmap_md5, checksum, userid, score, max_combo, full_combo, mods, 300_count, 100_count, 50_count, katus_count, gekis_count, misses_count, `time`, play_mode, playtime, completed, accuracy, pp) VALUES (NULL, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"
 			self.scoreID = int(glob.db.execute(query, [self.fileMd5, self.scoreChecksum, userUtils.getID(self.playerName), self.score, self.maxCombo, int(self.fullCombo), self.mods, self.c300, self.c100, self.c50, self.cKatu, self.cGeki, self.cMiss, self.playDateTime, self.gameMode, self.playTime if self.playTime is not None and not self.passed else self.fullPlayTime, self.completed, self.accuracy * 100, self.pp]))
 
 			# Set old personal best to completed = 2
 			if self.oldPersonalBest != 0 and self.completed == 3:
-				glob.db.execute("UPDATE scores SET completed = 2 WHERE id = %s AND completed = 3 LIMIT 1", [self.oldPersonalBest])
+				glob.db.execute(f"UPDATE {type(self).t['sl']} SET completed = 2 WHERE id = %s AND completed = 3 LIMIT 1", [self.oldPersonalBest])
 
-						# Update counters in redis
+			# Update counters in redis
 			glob.redis.incr("ripple:total_submitted_scores", 1)
 			glob.redis.incr("ripple:total_pp", int(self.pp))
 		glob.redis.incr("ripple:total_plays", 1)
@@ -335,21 +351,38 @@ class score:
 			b = beatmap.beatmap(self.fileMd5, 0)
 
 		# Calculate pp
-		if b.rankedStatus in [rankedStatuses.RANKED, rankedStatuses.APPROVED, rankedStatuses.QUALIFIED] and b.rankedStatus != rankedStatuses.UNKNOWN \
-		and scoreUtils.isRankable(self.mods) and self.passed and self.gameMode in pp.PP_CALCULATORS:
-			calculator = pp.PP_CALCULATORS[self.gameMode](b, self)
+		precond    = scoreUtils.isRankable(self.mods) and self.passed and self.gameMode in type(self).PP_CALCULATORS
+		loved_nopp = glob.conf.extra["lets"]["submit"]["loved-dont-give-pp"] # OK FIRST OF ALL, WHO TF WANTS LOVED FOR A PP?????
+		self.pp = 0
+		if not precond:
+			return
+		if b.rankedStatus != rankedStatuses.UNKNOWN:
+			return
+		if b.rankedStatus in RANKED_STATUS_COUNT:
+			calculator = type(self).PP_CALCULATORS[self.gameMode](b, self)
 			self.pp = calculator.pp
-		elif glob.conf.extra["lets"]["submit"]["loved-dont-give-pp"] and b.rankedStatus == rankedStatuses.LOVED \
-		and scoreUtils.isRankable(self.mods) and self.passed and self.gameMode in pp.PP_CALCULATORS:
-			self.pp = 0
-		elif not glob.conf.extra["lets"]["submit"]["loved-dont-give-pp"] and b.rankedStatus == rankedStatuses.LOVED \
-		and scoreUtils.isRankable(self.mods) and self.passed and self.gameMode in pp.PP_CALCULATORS:
-			calculator = pp.PP_CALCULATORS[self.gameMode](b, self)
+		elif b.rankedStatus in RANKED_STATUS_PARTIAL and not loved_nopp:
+			calculator = type(self).PP_CALCULATORS[self.gameMode](b, self)
 			self.pp = calculator.pp
-		else:
-			self.pp = 0
 
+class standardScore(baseScore):
+	pass
 
+# this is intended
+from pp import relaxoppai, rippoppai, wifipiano2, cicciobello
+class relaxScore(baseScore):
+	PP_CALCULATORS = {
+		gameModes.STD: relaxoppai.oppai,
+		gameModes.TAIKO: rippoppai.oppai,
+		gameModes.CTB: cicciobello.Cicciobello,
+		gameModes.MANIA: wifipiano2.piano # OK BUT HOW? RELAX ON MANIA? HOW? PLEASE EXPLAIN.
+	}
+	t = baseScore.t.copy()
+	t['sl'] = 'scores_relax'
+	rl = True
+	pass
+
+# FIXME: what the fuck is this actually.
 class PerfectScoreFactory:
 	@staticmethod
 	def create(beatmap, game_mode=gameModes.STD):

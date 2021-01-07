@@ -316,5 +316,5 @@ class relax(baseScoreBoard):
 	# sorry what??? SORRY WHAT???? this sphagett code.
 	# please refer to original scoreboardRelax.pyx for this stupidity.
 	# t['us'] = 'ER_EKS_stats' # dumbest abbreviation after EEEEEEEEEEEEEEZEEEEEEEEEEEEEEEEEEEE
-	t['sm'] = scoreRelax
+	t['sm'] = score
 	rl = 1
