@@ -6,14 +6,14 @@ from constants import exceptions, dataTypes
 from helpers import binaryHelper, generalHelper
 from objects import glob
 
-def buildFullReplay(scoreID=None, scoreData=None, rawReplay=None):
+def buildFullReplay(scoreID=None, scoreData=None, rawReplay=None, relax=False):
     if all(v is None for v in (scoreID, scoreData)) or all(v is not None for v in (scoreID, scoreData)):
         raise AttributeError("Either scoreID or scoreData must be provided, not neither or both")
 
     if scoreData is None:
         scoreData = glob.db.fetch(
-            "SELECT scores.*, users.username FROM scores LEFT JOIN users ON scores.userid = users.id "
-            "WHERE scores.id = %s",
+            f"SELECT s.*, users.username FROM {'scores_relax' if relax else 'scores'} as s LEFT JOIN users ON s.userid = users.id "
+            "WHERE s.id = %s",
             [scoreID]
         )
     else:
@@ -23,7 +23,7 @@ def buildFullReplay(scoreID=None, scoreData=None, rawReplay=None):
 
     if rawReplay is None:
         # Make sure raw replay exists
-        fileName = "{}/replay_{}.osr".format(glob.conf.config["server"]["replayspath"], scoreID)
+        fileName = "{}{}/replay_{}.osr".format(glob.conf.config["server"]["replayspath"], '_relax' if relax else '', scoreID)
         if not os.path.isfile(fileName):
             raise FileNotFoundError()
 
@@ -70,14 +70,14 @@ def buildFullReplay(scoreID=None, scoreData=None, rawReplay=None):
     # Return full replay
     return fullReplay
 
-def returnReplayFileName(scoreID=None, scoreData=None):
+def returnReplayFileName(scoreID=None, scoreData=None, relax=False):
     if all(v is None for v in (scoreID, scoreData)) or all(v is not None for v in (scoreID, scoreData)):
         raise AttributeError("Either scoreID or scoreData must be provided, not neither or both")
 
     if scoreData is None:
         scoreData = glob.db.fetch(
-            "SELECT scores.*, users.username FROM scores LEFT JOIN users ON scores.userid = users.id "
-            "WHERE scores.id = %s",
+            f"SELECT s.*, users.username FROM {'scores_relax' if relax else 'scores'} as s LEFT JOIN users ON s.userid = users.id "
+            "WHERE s.id = %s",
             [scoreID]
         )
     else:

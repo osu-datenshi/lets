@@ -84,8 +84,8 @@ def make_app():
 		(r"/web/maps/(.*)", mapsHandler.handler),
 		(r"/d/(.*)", downloadMapHandler.handler),
 		(r"/s/(.*)", downloadMapHandler.handler),
-		(r"/web/replays/(.*)", getFullReplayHandler.handler),
-		(r"/web/replays_relax/(.*)", getFullReplayHandlerRelax.handler),
+		(r"/web/replays/(.*)", getFullReplayHandler.standardHandler),
+		(r"/web/replays_relax/(.*)", getFullReplayHandler.relaxHandler),
 		(r"/web/errorlogs/(.*)", getFullErrorHandler.handler),
 
 		(r"/p/verify", redirectHandler.handler, dict(destination="https://osu.troke.id/")),

@@ -23,7 +23,6 @@ from constants import rankedStatuses
 from constants.exceptions import ppCalcException
 from helpers import aeshelper
 from helpers import replayHelper
-from helpers import replayHelperRelax
 from helpers import leaderboardHelper
 from helpers.generalHelper import zingonify, getHackByFlag
 from objects import beatmap
@@ -406,10 +405,7 @@ class handler(requestsManager.asyncRequestHandler):
 							f.write(replay)
 
 					if glob.conf.config["cono"]["enable"]:
-						if UsingRelax:
-							RPBUILD = replayHelperRelax.buildFullReplay
-						else:
-							RPBUILD = replayHelper.buildFullReplay
+						RPBUILD = replayHelper.buildFullReplay
 						# We run this in a separate thread to avoid slowing down scores submission,
 						# as cono needs a full replay
 						threading.Thread(target=lambda: glob.redis.publish(
@@ -423,7 +419,8 @@ class handler(requestsManager.asyncRequestHandler):
 								"replay_data": base64.b64encode(
 									RPBUILD(
 										s.scoreID,
-										rawReplay=self.request.files["score"][0]["body"]
+										rawReplay=self.request.files["score"][0]["body"],
+										relax=UsingRelax
 									)
 								).decode(),
 							})
