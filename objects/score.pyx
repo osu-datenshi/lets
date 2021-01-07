@@ -376,12 +376,9 @@ class standardScore(baseScore):
 # this is intended
 from pp import relaxoppai, rippoppai, wifipiano2, cicciobello
 class relaxScore(baseScore):
-	PP_CALCULATORS = {
-		gameModes.STD: relaxoppai.oppai,
-		gameModes.TAIKO: rippoppai.oppai,
-		gameModes.CTB: cicciobello.Cicciobello,
-		gameModes.MANIA: wifipiano2.piano # OK BUT HOW? RELAX ON MANIA? HOW? PLEASE EXPLAIN.
-	}
+	PP_CALCULATORS = baseScore.PP_CALCULATORS.copy()
+	PP_CALCULATORS.update(pp.PP_RELAX_CALCULATORS)
+	
 	t = baseScore.t.copy()
 	t['sl'] = 'scores_relax'
 	rl = True
