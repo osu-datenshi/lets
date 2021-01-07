@@ -316,14 +316,12 @@ if __name__ == "__main__":
 				try:
 					#glob.db.execute("SELECT 1+1")
 					#SOLUSI BIAR CEPAT MENINGGAL
-					dispose()
 					os.execv(sys.executable, [sys.executable] + sys.argv)
 					log.info("[AUTOMATED QUERY] has been execute!")
 				except:
 					log.info("[AUTOMATED QUERY] error! the connection will restart!")
+					os.execv(sys.executable, [sys.executable] + sys.argv)
 					#os.execv(sys.executable, [sys.executable] + sys.argv) //automated restart lets when error
-					glob.db = dbConnector.db(glob.conf.config["db"]["host"], glob.conf.config["db"]["username"], glob.conf.config["db"]["password"], glob.conf.config["db"]["database"], int(
-				glob.conf.config["db"]["workers"]))
 
 		# setting ke 1 jam nih
 		schedule.every(1800).seconds.do(ping)
