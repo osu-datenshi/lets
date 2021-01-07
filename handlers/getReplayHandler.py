@@ -23,9 +23,7 @@ class handler(requestsManager.asyncRequestHandler):
 	@sentry.captureTornado
 	def asyncGet(self):
 		try:
-			# OOF
-			UsingRelax = True
-
+			# insert ripple unfunny roblox word here. very unfunny
 			# Get request ip
 			ip = self.getRequestIP()
 
@@ -48,10 +46,12 @@ class handler(requestsManager.asyncRequestHandler):
 				raise exceptions.need2FAException(MODULE_NAME, username, ip)
 
 			# Get user ID
-			if UsingRelax:
-				replayData = glob.db.fetch("SELECT scores_relax.*, users.username AS uname FROM scores_relax LEFT JOIN users ON scores_relax.userid = users.id WHERE scores_relax.id = %s", [replayID])
+			replayData = glob.db.fetch("SELECT scores_relax.*, users.username AS uname FROM scores_relax LEFT JOIN users ON scores_relax.userid = users.id WHERE scores_relax.id = %s and users.id = %s", [replayID, userID])
+			if replayData:
+				UsingRelax = True
 			else:
-				replayData = glob.db.fetch("SELECT scores.*, users.username AS uname FROM scores LEFT JOIN users ON scores.userid = users.id WHERE scores.id = %s", [replayID])
+				replayData = glob.db.fetch("SELECT scores.*, users.username AS uname FROM scores LEFT JOIN users ON scores.userid = users.id WHERE scores.id = %s and users.id = %s", [replayID, userID])
+				UsingRelax = False
 
 			if replayData:
 				fileName = "{}_relax/replay_{}.osr".format(glob.conf.config["server"]["replayspath"], replayID)
