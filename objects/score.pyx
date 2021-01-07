@@ -109,6 +109,10 @@ class baseScore:
 			value = 0
 		self._playTime = value
 
+	@property
+	def visibleScore(self):
+		return not(userUtils.InvisibleBoard(self.playerUserID) & 2)
+	
 	def calculateAccuracy(self):
 		"""
 		Calculate and set accuracy for that score

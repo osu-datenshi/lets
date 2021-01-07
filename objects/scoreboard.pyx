@@ -3,6 +3,7 @@ from objects import scoreRelax #temporary until ripple bullshit fixed
 from common.ripple import userUtils
 from constants import rankedStatuses
 from common.constants import mods as modsEnum
+from common.constants import privileges
 from objects import glob
 from objects import beatmap
 
@@ -49,6 +50,7 @@ class baseScoreBoard:
 				self.boardmode = 0
 		elif beatmap.rankedStatus in [4]:
 			self.boardmode = 0
+		self.seeEverything = userUtils.getPrivileges(self.userID) & privileges.ADMIN_REPLAY_WATCHER
 		if setScores:
 			self.setScores()
 	
@@ -65,7 +67,7 @@ class baseScoreBoard:
 		return self.mods >= 0 or self.mods & modsEnum.AUTOPLAY
 	
 	@property
-	def isBoardVisibleToYou(self):
+	def seeLeaderboard(self):
 		return not(self.boardvis & 1)
 	
 	@staticmethod
@@ -306,13 +308,15 @@ class baseScoreBoard:
 			data += self.scores[0].getData(pp=self.ppboard)
 
 		# Output top 50 scores
-		if self.isBoardVisibleToYou:
+		if self.seeLeaderboard:
 			score_key = 'score'
 			if self.forcedScore or self.boardmode == 0:
 				pass
 			else:
 				score_key = 'score pp'.split()[self.boardmode]
 			for i in self.scores[1:]:
+				if not (self.seeEverything or i.visibleScore):
+					continue
 				data += i.getData(key=score_key)
 		else:
 			print(f"User {self.userID} had their leaderboard hidden from theirs.")
