@@ -141,6 +141,9 @@ class handler(requestsManager.asyncRequestHandler):
 			# Get variables for relax
 			used_mods = int(scoreData[13])
 			UsingRelax = used_mods & 128
+			if used_mods & mods.SCOREV2: # put some V2 guard for now (I have a plan to implement separate system with this)
+				self.write('ok')
+				return 0
 
 			# Create score object and set its data
 			if UsingRelax:
