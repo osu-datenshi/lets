@@ -143,6 +143,7 @@ class handler(requestsManager.asyncRequestHandler):
 			UsingRelax = used_mods & 128
 			if used_mods & mods.SCOREV2: # put some V2 guard for now (I have a plan to implement separate system with this)
 				self.write('ok')
+				glob.redis.delete(lock_key)
 				return
 
 			# Create score object and set its data
