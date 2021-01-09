@@ -46,28 +46,30 @@ class handler(requestsManager.asyncRequestHandler):
 				raise exceptions.need2FAException(MODULE_NAME, username, ip)
 
 			# Get user ID
-			replayData = glob.db.fetch("SELECT scores_relax.*, users.username AS uname FROM scores_relax LEFT JOIN users ON scores_relax.userid = users.id WHERE scores_relax.id = %s and users.id = %s", [replayID, userID])
-			if replayData:
-				UsingRelax = True
+			replayMode = 'NM'
+			modeData = {
+				'NM': ('', 'VANILLA', 'scores'),
+				'RL': ('_relax', 'RELAX', 'scores_relax'),
+			}
+			userStat = glob.db.fetch('select current_status as c from users_stats where id = %s', [userID])
+			if userStat['c'].endswith('on Relax'):
+				replayMode = 'RL'
+			
+			replayData = glob.db.fetch("SELECT s.*, users.username AS uname FROM {} as s LEFT JOIN users ON s.userid = users.id WHERE s.id = %s".format(modeData[replayMode][2]), [replayID])
+			
+			if replayData is not None:
+				fileName = "{}{}/replay_{}.osr".format(glob.conf.config["server"]["replayspath"], modeData[replayMode][0], replayID)
+				Play = modeData[replayMode][1]
 			else:
-				replayData = glob.db.fetch("SELECT scores.*, users.username AS uname FROM scores LEFT JOIN users ON scores.userid = users.id WHERE scores.id = %s and users.id = %s", [replayID, userID])
-				UsingRelax = False
-
-			if UsingRelax:
-				fileName = "{}_relax/replay_{}.osr".format(glob.conf.config["server"]["replayspath"], replayID)
-			else:
-				fileName = "{}/replay_{}.osr".format(glob.conf.config["server"]["replayspath"], replayID)
+				log.warning("Replay {} ({}) doesn't exist".format(replayID, replayMode))
+				self.write("")
+				return
 
 			# Increment 'replays watched by others' if needed
 			if replayData is not None:
 				if username != replayData["uname"]:
 					userUtils.incrementReplaysWatched(replayData["userid"], replayData["play_mode"])
 			# Serve replay
-
-			if UsingRelax:
-				Play = "RELAX"
-			else:
-				Play = "VANILLA"
 
 			log.info("[{}] Serving replay_{}.osr".format(Play, replayID))
 
