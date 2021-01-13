@@ -278,8 +278,8 @@ class handler(requestsManager.asyncRequestHandler):
 						send_bot_message(warning_message)
 					else:
 						do_restrict('**{}** ({}) has been restricted due to too high pp gain and too brutal ({}pp)'.format(username, userID, s.pp), note="Restricted due to too high pp gain ({}pp)".format(s.pp))
-				if userID == 3 and int(s.pp) > 0:
-					send_bot_message("Map PP gained {:.1f}pp. Current PP Limit is {:d}pp. Current mode total PP limit is {:d}pp".format(s.pp, limit_pp, pp_total_max))
+				if (hasattr(userUtils,'PPScoreInformation') and (userUtils.PPScoreInformation(userID, relax)) or (userID == 3)) and int(s.pp) > 0:
+					send_bot_message("You obtained {:.1f}/{:d}pp. Current mode total PP limit is {:d}pp".format(s.pp, limit_pp, pp_total_max))
 
 			# Check notepad hack
 			if bmk is None and bml is None:

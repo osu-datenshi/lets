@@ -287,13 +287,16 @@ class baseScore:
 				# No duplicates found.
 				# Get right "completed" value
 				loved_nopp = glob.conf.extra["lets"]["submit"]["loved-dont-give-pp"]
-				score_key = glob.conf.extra["lets"]["submit"]["score-overwrite"]
+				if hasattr(userUtils,'ScoreOverrideType'):
+					score_key = userUtils.ScoreOverrideType(userID, self.rl)
+				else:
+					score_key = glob.conf.extra["lets"]["submit"]["score-overwrite"]
+				score_keys = ['score']
+				if score_key != 'score':
+					score_keys.insert(0, score_key)
 				if b.rankedStatus == rankedStatuses.LOVED and loved_nopp:
 					personalBest = glob.db.fetch(f"SELECT id, score FROM {type(self).t['sl']} WHERE userid = %s AND beatmap_md5 = %s AND play_mode = %s AND completed = 3 LIMIT 1", [userID, self.fileMd5, self.gameMode])
 				else:
-					score_keys = ['score']
-					if score_key != 'score':
-						score_keys.insert(0, score_key)
 					personalBest = glob.db.fetch("SELECT id, {} FROM {} WHERE userid = %s AND beatmap_md5 = %s AND play_mode = %s AND completed = 3 LIMIT 1".format(
 						", ".join(score_keys),
 						type(self).t['sl']
@@ -319,7 +322,20 @@ class baseScore:
 					self.oldPersonalBest = personalBest["id"]
 					if count_override:
 						self.calculatePP()
-						self.completed = 3 if getattr(self, score_key) > personalBest[score_key] else 2
+						"""
+						Allow score overtake if respective score key is the same one
+						"""
+						self.completed = 2
+						for key in score_keys:
+							currentScore = getattr(self, key)
+							if currentScore == personalBest[key]:
+								continue
+							elif currentScore > personalBest[key]:
+								self.completed = 3
+								break
+							elif currentScore < personalBest[key]:
+								break
+						pass # NOTE: score regarded as non-personal best by any means unless one of criterion is beaten.
 					else:
 						self.completed = 3 if self.score > personalBest["score"] else 2
 			elif self.quit:
