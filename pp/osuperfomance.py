@@ -74,10 +74,10 @@ def ReadableMods(m):
         r.append("3K")
     elif m & PlayMods.KEY2:
         r.append("2K")
-    elif m & PlayMods.RANDOM:
+    if m & PlayMods.RANDOM:
         r.append("RD")
-    elif m & PlayMods.LASTMOD:
-        r.append("CN")
+    if m & PlayMods.LASTMOD:
+        r.append("CN") #CN? chingchong?
     return r
 
 class OsuPerfomanceCalculationsError(Exception):

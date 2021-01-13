@@ -15,6 +15,7 @@ import secret.achievements.utils
 from common import generalUtils
 from common.constants import gameModes
 from common.constants import mods
+from common.constants import privileges
 from common.log import logUtils as log
 from common.ripple import userUtils
 from common.web import requestsManager
@@ -197,6 +198,14 @@ class handler(requestsManager.asyncRequestHandler):
 			else:
 				userUtils.incrementPlaytime(userID, s.gameMode, length)
 			midPPCalcException = None
+			
+			# Send message
+			def send_bot_message(msg):
+				safe_user = username.encode().decode("ASCII", "ignore")
+				alert = "{}, {}".format(safe_user, msg)
+				params = urlencode({"k": glob.conf.config["server"]["apikey"], "to": safe_user, "msg": alert})
+				requests.get("{}/api/v1/fokabotMessage?{}".format(glob.conf.config["server"]["banchourl"], params))
+			
 			try:
 				s.calculatePP()
 			except Exception as e:
@@ -206,15 +215,9 @@ class handler(requestsManager.asyncRequestHandler):
 				# I know this is bad, but who cares since I'll rewrite
 				# the scores server again.
 				log.error("Caught an exception in pp calculation, re-raising after saving score in db")
+				send_bot_message("PP calculation error happened. Please poke us at Discord for details. Make sure it's fast enough, okay?")
 				s.pp = 0
 				midPPCalcException = e
-			
-			# Send message
-			def send_bot_message(msg):
-				safe_user = username.encode().decode("ASCII", "ignore")
-				alert = "{}, {}".format(safe_user, msg)
-				params = urlencode({"k": glob.conf.config["server"]["apikey"], "to": safe_user, "msg": alert})
-				requests.get("{}/api/v1/fokabotMessage?{}".format(glob.conf.config["server"]["banchourl"], params))
 			
 			# Do Restrict
 			def do_restrict(reason, note=None, warnlog=None):
@@ -238,28 +241,45 @@ class handler(requestsManager.asyncRequestHandler):
 			# Restrict obvious cheaters
 			is_fullmod  = bool( (s.mods & (mods.DOUBLETIME | mods.NIGHTCORE)) and (s.mods & mods.FLASHLIGHT) and (s.mods & mods.HARDROCK) and (s.mods & mods.HIDDEN) )
 			if not restricted:
-				limit_pp, var_limit, can_limit = userUtils.obtainPPLimit(userID, s.gameMode, relax=bool(UsingRelax), modded=is_fullmod)
+				limit_pp, var_limit, can_limit, pp_total_max = userUtils.obtainPPLimit(userID, s.gameMode, relax=bool(UsingRelax), modded=is_fullmod)
 				relax = 1 if used_mods & 128 else 0
 				
 				unrestricted_user = userUtils.noPPLimit(userID, relax)
 				null_over_pp = glob.conf.extra['lets']['submit'].get('null-over-pp',False)
 				null_mode_pp = limit_pp <= 0
+				if relax:
+					userStat = userUtils.getUserStatsRx(userID, gameMode)
+				else:
+					userStat = userUtils.getUserStats(userID, gameMode)
+				userCeilPass = userUtils.getPrivileges(userID) & privileges.USER_VERIFIED_CEILING
+				userOverPP = userStat.pp >= pp_total_max and not userCeilPass
+				
+				if userOverPP:
+					null_over_pp, null_mode_pp, s.pp = True, False, 0
 				
 				if null_mode_pp:
 					s.pp = -1
-				elif (s.pp >= limit_pp) and not unrestricted_user and not glob.conf.extra["mode"]["no-pp-cap"]:
+					log.warning(f"Uh oh, PP less mode. {s.gameMode}/{UsingRelax}")
+				elif (userOverPP) or (s.pp >= limit_pp) and not unrestricted_user and not glob.conf.extra["mode"]["no-pp-cap"]:
 					if null_over_pp:
 						# forgive the user but nullify the PP gain for this run.
-						s.pp = -1
-						if can_limit:
+						log.warning(f"Uh oh, Over-PP-Limit {s.gameMode}/{UsingRelax}")
+						if userOverPP:
+							warning_message = "looks like your total PP is past-verification requirement. Please submit a prove to the staff that you played legit to continue."
+						elif can_limit:
+							s.pp = -1
 							warning_message = "looks like your PP gain for this play is over than what you should be able to. Please try again later once you've gained enough PP."
 						elif var_limit and is_fullmod:
+							s.pp = -1
 							warning_message = "looks like your PP gain is too high. This score won't yield PP."
 						else:
+							s.pp = -1
 							warning_message = "looks like your PP gain is too high. This score won't yield PP."
 						send_bot_message(warning_message)
 					else:
 						do_restrict('**{}** ({}) has been restricted due to too high pp gain and too brutal ({}pp)'.format(username, userID, s.pp), note="Restricted due to too high pp gain ({}pp)".format(s.pp))
+				if userID == 3 and int(s.pp) > 0:
+					send_bot_message("Map PP gained {:.1f}pp. Current PP Limit is {:d}pp. Current mode total PP limit is {:d}pp".format(s.pp, limit_pp, pp_total_max))
 
 			# Check notepad hack
 			if bmk is None and bml is None:
