@@ -22,62 +22,62 @@ def ReadableMods(m):
     :return: readable mods string, eg HDDT
     """
     r = []
-    if m & PlayMods.NOFAIL > 0:
+    if m & PlayMods.NOFAIL:
         r.append("NF")
-    if m & PlayMods.EASY > 0:
-        r.append("EZ")
-    if m & PlayMods.HIDDEN > 0:
+    if m & PlayMods.EASY:
+        r.append("ZE"[::-1]) # pepes tolol
+    if m & PlayMods.HIDDEN:
         r.append("HD")
-    if m & PlayMods.FADEIN > 0:
+    if m & PlayMods.FADEIN:
         r.append("FI")
-    if m & PlayMods.HARDROCK > 0:
+    if m & PlayMods.HARDROCK:
         r.append("HR")
     if m & PlayMods.NIGHTCORE:
         r.append("NC")
-    if (not "NC" in r) and (m & PlayMods.DOUBLETIME > 0):
+    elif m & PlayMods.DOUBLETIME > 0:
         r.append("DT")
-    if m & PlayMods.HALFTIME > 0:
+    if m & PlayMods.HALFTIME:
         r.append("HT")
-    if m & PlayMods.FLASHLIGHT > 0:
+    if m & PlayMods.FLASHLIGHT:
         r.append("FL")
-    if m & PlayMods.SPUNOUT > 0:
+    if m & PlayMods.SPUNOUT:
         r.append("SO")
-    if m & PlayMods.TOUCHSCREEN > 0:
+    if m & PlayMods.TOUCHSCREEN:
         r.append("TD")
-    if m & PlayMods.RELAX > 0:
-        r.append("RX")
-    if m & PlayMods.RELAX2 > 0:
+    if m & PlayMods.RELAX:
+        r.append("LR"[::-1]) # pepes tolol
+    if m & PlayMods.RELAX2:
         r.append("AP")
-    if m & PlayMods.PERFECT > 0:
+    if m & PlayMods.PERFECT:
         r.append("PF")
-    if (not "PF" in r) and (m & PlayMods.SUDDENDEATH > 0):
+    elif m & PlayMods.SUDDENDEATH:
         r.append("SD")
-    if m & 1073741824 > 0:  # Mirror
+    if hasattr(PlayMods, 'MIRROR') and (m & PlayMods.MIRROR) or (m & 1073741824):  # Mirror
         r.append("MR")
-    if m & PlayMods.KEY4 > 0:
+    if m & PlayMods.KEY4:
         r.append("4K")
-    if m & PlayMods.KEY5 > 0:
+    elif m & PlayMods.KEY5:
         r.append("5K")
-    if m & PlayMods.KEY6 > 0:
+    elif m & PlayMods.KEY6:
         r.append("6K")
-    if m & PlayMods.KEY7 > 0:
+    elif m & PlayMods.KEY7:
         r.append("7K")
-    if m & PlayMods.KEY8 > 0:
+    elif m & PlayMods.KEY8:
         r.append("8K")
-    if m & PlayMods.RANDOM > 0:
-        r.append("RD")
-    if m & PlayMods.LASTMOD > 0:
-        r.append("CN")
-    if m & PlayMods.KEY9 > 0:
+    elif m & PlayMods.KEY9:
         r.append("9K")
-    if m & PlayMods.KEY10 > 0:
+    elif m & PlayMods.KEY10:
         r.append("10K")
-    if m & PlayMods.KEY1 > 0:
+    elif m & PlayMods.KEY1:
         r.append("1K")
-    if m & PlayMods.KEY3 > 0:
+    elif m & PlayMods.KEY3:
         r.append("3K")
-    if m & PlayMods.KEY2 > 0:
+    elif m & PlayMods.KEY2:
         r.append("2K")
+    elif m & PlayMods.RANDOM:
+        r.append("RD")
+    elif m & PlayMods.LASTMOD:
+        r.append("CN")
     return r
 
 class OsuPerfomanceCalculationsError(Exception):
@@ -94,13 +94,13 @@ class OsuPerfomanceCalculation:
         self.pp = 0
 
         # we will use this for taiko, ctb, mania
-        if self.score.gameMode == 1:
+        if self.score.gameMode in (0, 1):
             # taiko
             self.OPC_DATA = self.OPC_DATA.format("oppai")
-        elif self.score.gameMode == 2:
+        elif self.score.gameMode in (2,):
             # ctb
             self.OPC_DATA = self.OPC_DATA.format("catch_the_pp")
-        elif self.score.gameMode == 3:
+        elif self.score.gameMode in (3,):
             # mania
             self.OPC_DATA = self.OPC_DATA.format("omppc")
 
@@ -110,30 +110,58 @@ class OsuPerfomanceCalculation:
         # Run with dotnet
         # dotnet run --project .\osu-tools\PerformanceCalculator\ simulate osu <map_path> -a 94 -c 334 -m dt -m hd -X(misses) 0 -M(50) 0 -G(100) 21
         command = "dotnet ./pp/osu-tools/PerformanceCalculator/bin/Release/netcoreapp3.1/PerformanceCalculator.dll simulate"
-        if self.score.gameMode == 1:
+        cmd = command.split()
+        if self.score.gameMode == 0:
+            command += f" osu {self.mapPath} -a {int(self.score.accuracy)} " \
+                f"-c {int(self.score.maxCombo)} " \
+                f"-X {int(self.score.cMiss)} " \
+                f"-M {int(self.score.c50)} " \
+                f"-G {int(self.score.c100)} "
+            cmd.append('osu'); cmd.append(self.mapPath)
+            cmd.append('-a'); cmd.append(int(self.score.accuracy))
+            cmd.append('-c'); cmd.append(int(self.score.maxCombo))
+            cmd.append('-X'); cmd.append(int(self.score.cMiss))
+            cmd.append('-M'); cmd.append(int(self.score.c50))
+            cmd.append('-G'); cmd.append(int(self.score.c100))
+        elif self.score.gameMode == 1:
             # taiko
             command += f" taiko {self.mapPath} -a {int(self.score.accuracy)} " \
                 f"-c {int(self.score.maxCombo)} " \
                 f"-X {int(self.score.cMiss)} " \
                 f"-G {int(self.score.c100)} "
+            cmd.append('taiko'); cmd.append(self.mapPath)
+            cmd.append('-a'); cmd.append(int(self.score.accuracy))
+            cmd.append('-c'); cmd.append(int(self.score.maxCombo))
+            cmd.append('-X'); cmd.append(int(self.score.cMiss))
+            cmd.append('-G'); cmd.append(int(self.score.c100))
         elif self.score.gameMode == 2:
-            # ctb        
+            # ctb
             command += f" catch {self.mapPath} -a {int(self.score.accuracy)} " \
                 f"-c {int(self.score.maxCombo)} " \
                 f"-X {int(self.score.cMiss)} " \
                 f"-T {int(self.score.c50)} " \
-                f"-D {int(self.score.c100)} " 
+                f"-D {int(self.score.c100)} "
+            cmd.append('catch'); cmd.append(self.mapPath)
+            cmd.append('-a'); cmd.append(int(self.score.accuracy))
+            cmd.append('-c'); cmd.append(int(self.score.maxCombo))
+            cmd.append('-X'); cmd.append(int(self.score.cMiss))
+            cmd.append('-T'); cmd.append(int(self.score.c50))
+            cmd.append('-D'); cmd.append(int(self.score.c100))
         elif self.score.gameMode == 3:
             # mania
             command += f" mania {self.mapPath} -s {int(self.score.score)} "
+            cmd.append('mania'); cmd.append(self.mapPath)
+            cmd.append('-s'); cmd.append(self.score.score)
 
         if self.score.mods > 0:
             for mod in ReadableMods(self.score.mods):
                 command += f"-m {mod} "
-
-        log.debug("opc ~> running {}".format(command))
+                cmd.append('-m'); cmd.append(mod)
+        
+        cmd[:] = [str(c) for c in cmd]
+        log.debug("opc ~> running {}".format(' '.join(cmd)))
         process = subprocess.run(
-            command, shell=True, stdout=subprocess.PIPE)
+            cmd, shell=True, stdout=subprocess.PIPE)
 
         # Get pp from output
         output = process.stdout.decode("utf-8", errors="ignore")

@@ -44,8 +44,9 @@ def cacheMap(mapFile, _beatmap):
             raise exceptions.osuApiFailException("maps")
 
         # Delete old .osu file if it exists
-        if os.path.isfile(mapFile):
-            os.remove(mapFile)
+        # if os.path.isfile(mapFile):
+        #    os.remove(mapFile)
+        # why remove? "w" is overwrite operation.
 
         # Save .osu file
         with open(mapFile, "wb+") as f:
