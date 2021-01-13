@@ -118,7 +118,7 @@ class OsuPerfomanceCalculation:
                 f"-M {int(self.score.c50)} " \
                 f"-G {int(self.score.c100)} "
             cmd.append('osu'); cmd.append(self.mapPath)
-            cmd.append('-a'); cmd.append(int(self.score.accuracy))
+            cmd.append('-a'); cmd.append(int(self.score.accuracy * 100))
             cmd.append('-c'); cmd.append(int(self.score.maxCombo))
             cmd.append('-X'); cmd.append(int(self.score.cMiss))
             cmd.append('-M'); cmd.append(int(self.score.c50))
@@ -130,7 +130,7 @@ class OsuPerfomanceCalculation:
                 f"-X {int(self.score.cMiss)} " \
                 f"-G {int(self.score.c100)} "
             cmd.append('taiko'); cmd.append(self.mapPath)
-            cmd.append('-a'); cmd.append(int(self.score.accuracy))
+            cmd.append('-a'); cmd.append(int(self.score.accuracy * 100))
             cmd.append('-c'); cmd.append(int(self.score.maxCombo))
             cmd.append('-X'); cmd.append(int(self.score.cMiss))
             cmd.append('-G'); cmd.append(int(self.score.c100))
@@ -142,7 +142,7 @@ class OsuPerfomanceCalculation:
                 f"-T {int(self.score.c50)} " \
                 f"-D {int(self.score.c100)} "
             cmd.append('catch'); cmd.append(self.mapPath)
-            cmd.append('-a'); cmd.append(int(self.score.accuracy))
+            cmd.append('-a'); cmd.append(int(self.score.accuracy * 100))
             cmd.append('-c'); cmd.append(int(self.score.maxCombo))
             cmd.append('-X'); cmd.append(int(self.score.cMiss))
             cmd.append('-T'); cmd.append(int(self.score.c50))
@@ -160,8 +160,8 @@ class OsuPerfomanceCalculation:
         
         cmd[:] = [str(c) for c in cmd]
         log.debug("opc ~> running {}".format(' '.join(cmd)))
-        process = subprocess.run(
-            cmd, shell=True, stdout=subprocess.PIPE)
+        shellos = False
+        process = subprocess.run((' '.join(cmd) if shellos else cmd), shell=shellos, stdout=subprocess.PIPE)
 
         # Get pp from output
         output = process.stdout.decode("utf-8", errors="ignore")
@@ -176,6 +176,10 @@ class OsuPerfomanceCalculation:
         log.debug("opc ~> output: {}".format(output))
 
         if len(output.items()) < 4:
+            if self.score.playerUserID in (2,3):
+                print(command, cmd, ' '.join(cmd))
+                print(process)
+                print(output)
             raise OsuPerfomanceCalculationsError(
                 "Wrong output present")
 
@@ -192,7 +196,7 @@ class OsuPerfomanceCalculation:
         try:
             # Reset pp
             self.pp = 0
-            if self.score.mods & PlayMods.SCOREV2 > 0:
+            if self.score.mods & PlayMods.SCOREV2:
                 return 0
 
             # Cache map
@@ -200,7 +204,7 @@ class OsuPerfomanceCalculation:
 
             # Calculate pp
             self.pp = self._runProcess()
-        except OsuPerfomanceCalculationsError:
+        except OsuPerfomanceCalculationsError as e:
             log.warning("Invalid beatmap {}".format(
                 self.beatmap.beatmapID))
             self.pp = 0
