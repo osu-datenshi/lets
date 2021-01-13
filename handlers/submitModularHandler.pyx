@@ -248,11 +248,11 @@ class handler(requestsManager.asyncRequestHandler):
 				null_over_pp = glob.conf.extra['lets']['submit'].get('null-over-pp',False)
 				null_mode_pp = limit_pp <= 0
 				if relax:
-					userStat = userUtils.getUserStatsRx(userID, gameMode)
+					userStat = userUtils.getUserStatsRx(userID, s.gameMode)
 				else:
-					userStat = userUtils.getUserStats(userID, gameMode)
+					userStat = userUtils.getUserStats(userID, s.gameMode)
 				userCeilPass = userUtils.getPrivileges(userID) & privileges.USER_VERIFIED_CEILING
-				userOverPP = userStat.pp >= pp_total_max and not userCeilPass
+				userOverPP = userStat['pp'] >= pp_total_max and not userCeilPass
 				
 				if userOverPP:
 					null_over_pp, null_mode_pp, s.pp = True, False, 0
