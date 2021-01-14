@@ -1,2 +1,2 @@
-python3 setup.py build_ext --inplace
-python3 lets.py
+python3.6 setup.py build_ext --inplace
+python3.6 lets.py
