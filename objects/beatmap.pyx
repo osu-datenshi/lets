@@ -89,7 +89,7 @@ class beatmap:
 			# objects.glob.db.execute("DELETE FROM beatmaps WHERE id = %s LIMIT 1", [bdata["id"]])
 		else:
 			# Unfreeze beatmap status
-			frozen = False
+			frozen = self.rankedStatusFrozen
 
 		if objects.glob.conf.extra["mode"]["rank-all-maps"] and not frozen:
 			self.rankedStatus = 2
@@ -344,7 +344,8 @@ class beatmap:
 		# if they haven't been updated
 		if dbResult and self.refresh:
 			dbResult = False
-
+		
+		needUpdate = False
 		if not dbResult:
 			log.debug("Beatmap not found in db")
 			# If this beatmap is not in db, get it from osu!api
@@ -359,10 +360,14 @@ class beatmap:
 				self.rankedStatus = rankedStatuses.NOT_SUBMITTED
 			elif self.rankedStatus not in (rankedStatuses.NOT_SUBMITTED, rankedStatuses.NEED_UPDATE):
 				# We get beatmap data from osu!api, save it in db
-				self.addBeatmapToDB()
+				needUpdate = True
 		else:
 			log.debug("Beatmap found in db")
+			rankedStatus = self.rankedStatus
 			beatmapHelper.autorankCheck(self)
+			needUpdate = rankedStatus != self.rankedStatus
+		if needUpdate:
+			self.addBeatmapToDB()
 
 		log.debug("{}\n{}\n{}\n{}".format(self.starsStd, self.starsTaiko, self.starsCtb, self.starsMania))
 
