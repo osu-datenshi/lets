@@ -4,6 +4,7 @@ import datetime
 from common.log import logUtils as log
 from common.constants import privileges
 from constants import rankedStatuses
+from helpers import beatmapHelper
 from helpers import osuapiHelper
 import objects.glob
 
@@ -12,7 +13,7 @@ class beatmap:
 	             "songName", "fileMD5", "rankedStatus", "rankedStatusFrozen",
 							 "beatmapID", "beatmapSetID", 'creatorID', 'displayTitle', "offset",
 	             "rating", "mode", "starsStd", "starsTaiko", "starsCtb", "starsMania", "AR", "OD", "maxCombo", "hitLength",
-	             "bpm", "rankingDate", "playcount" ,"passcount", "refresh", "fileName", 'isOsz2')
+	             "bpm", 'updateDate', "rankingDate", "playcount" ,"passcount", "refresh", "fileName", 'isOsz2')
 
 	def __init__(self, md5 = None, beatmapSetID = None, gameMode = 0, refresh=False, fileName=None):
 		"""
@@ -38,7 +39,7 @@ class beatmap:
 		self.offset = 0		# Won't implement
 		self.rating = 0.
 
-		self.starsStd = 0.0	# stars for converted
+		self.starsStd = 0.0
 		self.starsTaiko = 0.0	# stars for converted
 		self.starsCtb = 0.0		# stars for converted
 		self.starsMania = 0.0	# stars for converted
@@ -49,6 +50,7 @@ class beatmap:
 		self.hitLength = 0
 		self.bpm = 0
 
+		self.updateDate = 0
 		self.rankingDate = 0
 		
 		# Statistics for ranking panel
@@ -61,6 +63,8 @@ class beatmap:
 		if md5 is not None and beatmapSetID is not None:
 			self.setData(md5, beatmapSetID)
 
+	# Redundancy Plan:
+	# Custom beatmaps have their own structure whilist the beatmaps dump is for auto-gen purposes. Please understand how shitty the API is.
 	def addBeatmapToDB(self):
 		"""
 		Add current beatmap data in db if not in yet
@@ -79,67 +83,59 @@ class beatmap:
 			# This beatmap is already in db, remove old record
 			# Get current frozen status
 			frozen = bdata["ranked_status_freezed"]
-			if frozen == 1:
+			if frozen:
 				self.rankedStatus = bdata["ranked"]
-			log.debug("Deleting old beatmap data ({})".format(bdata["id"]))
-			objects.glob.db.execute("DELETE FROM beatmaps WHERE id = %s LIMIT 1", [bdata["id"]])
+			# log.debug("Deleting old beatmap data ({})".format(bdata["id"]))
+			# objects.glob.db.execute("DELETE FROM beatmaps WHERE id = %s LIMIT 1", [bdata["id"]])
 		else:
 			# Unfreeze beatmap status
 			frozen = False
 
-		if objects.glob.conf.extra["mode"]["rank-all-maps"]:
+		if objects.glob.conf.extra["mode"]["rank-all-maps"] and not frozen:
 			self.rankedStatus = 2
 
 		# Add new beatmap data
 		log.debug("Saving beatmap data in db...")
-		if False:
-			"""
-			objects.glob.db.execute(
-				"INSERT INTO `beatmaps` (`id`, `beatmap_id`, `beatmapset_id`, `beatmap_md5`, `song_name`, "
-				"`ar`, `od`, `difficulty_std`, `difficulty_taiko`, `difficulty_ctb`, `difficulty_mania`, "
-				"`max_combo`, `hit_length`, `bpm`, `ranked`, `latest_update`, `ranked_status_freezed`) "
-				"VALUES (NULL, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (
-			"""
-		params = [
-			self.beatmapID,
-			self.beatmapSetID,
-			self.creatorID,
-			self.fileMD5,
-			self.mode,
-			self.artist.encode("utf-8", "ignore").decode("utf-8"),
-			self.title.encode("utf-8", "ignore").decode("utf-8"),
-			self.difficultyName.encode("utf-8", "ignore").decode("utf-8"),
-			self.artistUnicode.encode("utf-8", "ignore").decode("utf-8"),
-			self.titleUnicode.encode("utf-8", "ignore").decode("utf-8"),
-			self.songName.encode("utf-8", "ignore").decode("utf-8"),
-			self.displayTitle.encode("utf-8", "ignore").decode("utf-8"),
-			self.AR,
-			self.OD,
-			self.starsStd,
-			self.starsTaiko,
-			self.starsCtb,
-			self.starsMania,
-			self.maxCombo,
-			self.hitLength,
-			self.bpm,
-			self.rankedStatus if frozen == 0 else 2,
-			int(time.time()),
-			frozen
-		#)
-		]
+		params = {
+			'beatmap_id': self.beatmapID,
+			'beatmapset_id': self.beatmapSetID,
+			'creator_id': self.creatorID,
+			'beatmap_md5': self.fileMD5,
+			'mode': self.mode,
+			'artist': self.artist.encode("utf-8", "ignore").decode("utf-8"),
+			'title': self.title.encode("utf-8", "ignore").decode("utf-8"),
+			'difficulty_name': self.difficultyName.encode("utf-8", "ignore").decode("utf-8"),
+			'artist_unicode': self.artistUnicode.encode("utf-8", "ignore").decode("utf-8"),
+			'title_unicode': self.titleUnicode.encode("utf-8", "ignore").decode("utf-8"),
+			'song_name': self.songName.encode("utf-8", "ignore").decode("utf-8"),
+			'display_title': self.displayTitle.encode("utf-8", "ignore").decode("utf-8"),
+			'ar': self.AR,
+			'od': self.OD,
+			'difficulty_std': self.starsStd,
+			'difficulty_taiko': self.starsTaiko,
+			'difficulty_ctb': self.starsCtb,
+			'difficulty_mania': self.starsMania,
+			'max_combo': self.maxCombo,
+			'hit_length': self.hitLength,
+			'bpm': self.bpm,
+			'ranked': self.rankedStatus,
+			'bancho_last_touch': self.updateDate,
+			'latest_update': int(time.time()),
+			'ranked_status_freezed': frozen
+		}
 		if self.fileName is not None:
-			params.append(self.fileName)
-		objects.glob.db.execute(
-			"INSERT INTO `beatmaps` (`id`, `beatmap_id`, `beatmapset_id`, `creator_id`, "
-			"`beatmap_md5`, `mode`, `artist`, `title`, `difficulty_name`, `artist_unicode`, `title_unicode`, `song_name`, `display_title`, "
-			"`ar`, `od`, `difficulty_std`, `difficulty_taiko`, `difficulty_ctb`, `difficulty_mania`, "
-			"`max_combo`, `hit_length`, `bpm`, `ranked`, "
-			"`latest_update`, `ranked_status_freezed`{extra_q}) "
-			"VALUES (NULL, {mandat_p})".format(
-				mandat_p=", ".join(['%s']*len(params)),
-				extra_q=", `file_name`" if self.fileName is not None else "",
-			), params
-		)
+			params['file_name'] = self.fileName
+		
+		# why delete then insert when you can just UPDATE the query... ripple oh ripple.
+		if bdata is None:
+			objects.glob.db.execute("INSERT INTO beatmaps ({keys}) VALUES ({values})".format(
+				keys=', '.join(f"`{k}`" for k in params.keys()),
+				values=', '.join(['%s'] * len(params))
+			), params.values())
+		else:
+			objects.glob.db.execute("UPDATE beatmaps SET {kp} WHERE id = %s".format(
+				kp=', '.join(f"{k} = %s" for k in params.keys())
+			), list(params.values()) + [bdata['id']])
 
 	def saveFileName(self, fileName):
 		# Temporary workaround to avoid re-fetching all beatmaps from osu!api
@@ -218,6 +214,7 @@ class beatmap:
 		self.maxCombo = int(data["max_combo"])
 		self.hitLength = int(data["hit_length"])
 		self.bpm = int(data["bpm"])
+		self.updateDate = int(data['bancho_last_touch'])
 		# Ranking panel statistics
 		self.playcount = int(data["playcount"]) if "playcount" in data else 0
 		self.passcount = int(data["passcount"]) if "passcount" in data else 0
@@ -246,7 +243,7 @@ class beatmap:
 			mainData = dataMania
 
 		# If the beatmap is frozen and still valid from osu!api, return True so we don't overwrite anything
-		if mainData is not None and self.rankedStatusFrozen == 1 and self.beatmapSetID > 100000000:
+		if mainData is not None and self.rankedStatusFrozen and self.beatmapSetID > 100000000:
 			return True
 
 		# Can't fint beatmap by MD5. The beatmap has been updated. Check with beatmap set ID
@@ -291,13 +288,11 @@ class beatmap:
 		self.fileMD5 = md5
 		
 		self.creatorID = int(mainData['creator_id'])
+		self.updateDate = obtainUnixClock(mainData['last_update'])
 		if mainData['approved_date']:
-			lastUpdate = obtainUnixClock(mainData['approved_date'])
-		else:
-			lastUpdate = self.autoRankCapability(mainData)
+			self.rankingDate = obtainUnixClock(mainData['approved_date'])
 		
 		self.rankedStatus = convertRankedStatus(int(mainData["approved"]))
-		self.rankingDate = lastUpdate
 		self.beatmapID = int(mainData["beatmap_id"])
 		self.beatmapSetID = int(mainData["beatmapset_id"])
 		self.mode = int(mainData['mode'])
@@ -327,7 +322,13 @@ class beatmap:
 		else:
 			self.bpm = -1
 		return True
-
+	
+	def setDataFromCustomBeatmaps(self, md5, beatmapSetID):
+		"""
+		i summon thou, custom meatbaps
+		"""
+		pass
+	
 	def setData(self, md5, beatmapSetID):
 		"""
 		Set this object's beatmap data from highest level possible.
@@ -347,7 +348,12 @@ class beatmap:
 		if not dbResult:
 			log.debug("Beatmap not found in db")
 			# If this beatmap is not in db, get it from osu!api
-			apiResult = self.setDataFromOsuApi(md5, beatmapSetID)
+			if self.beatmapSetID > 100000000:
+				apiResult = self.setDataFromCustomBeatmaps(md5, beatmapSetID)
+			else:
+				apiResult = self.setDataFromOsuApi(md5, beatmapSetID)
+				beatmapHelper.criteriaControl(self)
+			beatmapHelper.autorankCheck(self)
 			if not apiResult:
 				# If it's not even in osu!api, this beatmap is not submitted
 				self.rankedStatus = rankedStatuses.NOT_SUBMITTED
@@ -356,6 +362,7 @@ class beatmap:
 				self.addBeatmapToDB()
 		else:
 			log.debug("Beatmap found in db")
+			beatmapHelper.autorankCheck(self)
 
 		log.debug("{}\n{}\n{}\n{}".format(self.starsStd, self.starsTaiko, self.starsCtb, self.starsMania))
 
@@ -386,42 +393,17 @@ class beatmap:
 		return data
 		# return '|'.join(end_data)
 
-	def autoRankCapability(self, mapData):
-		# no autoranking a fixed rank map
-		obtainDateTime  = lambda t: datetime.datetime.strptime(t, "%Y-%m-%d %H:%M:%S")
-		obtainUnixClock = lambda t: int(time.mktime(t.timetuple()))
-		dateTouch   = obtainDateTime(mapData['last_update'])
-		if self.rankedStatusFrozen not in (1,2):
-			# TODO: check autorank_users
-			validUser     = self.is_autoRankCreator
-			# TODO: check autorank_loved or autorank_ignore
-			validMap      = self.is_autoRankable
-			validLovable  = self.is_autoLovable
-			
-			dateNow     = datetime.datetime.today()
-			dateQualify = dateTouch + datetime.timedelta(days=21)
-			dateRanked  = dateTouch + datetime.timedelta(days=28)
-			validCall   = validUser and validMap
-			# A map can't get ranked/loved/qualified if the user is not valid..
-			if dateNow > dateRanked and validCall:
-				if validLovable:
-					mapData['approved'] = str(rankedStatuses.LOVED)
-					log.info(f"{self.songTitle} is auto-lovable")
-				else:
-					mapData['approved'] = str(rankedStatuses.RANKED)
-					log.info(f"{self.songTitle} is auto-rankable")
-				self.rankedStatusFrozen = 3
-				return obtainUnixClock(dateRanked)
-			# A map won't be qualified if it's loved potential
-			elif dateNow > dateQualify and validCall and not validLovable:
-				mapData['approved'] = str(rankedStatuses.QUALIFIED)
-				log.info(f"{self.songTitle} is auto-qualifiable")
-				return obtainUnixClock(dateQualify)
-			else:
-				return obtainUnixClock(dateTouch)
+	def clearLeaderboard(self, hard=False):
+		if not self.fileMD5:
+			return
+		if hard:
+			objects.glob.db.execute('delete from scores where beatmap_md5 = %s',[self.fileMD5])
+			objects.glob.db.execute('delete from scores_relax where beatmap_md5 = %s',[self.fileMD5])
 		else:
-			return obtainUnixClock(dateTouch)
-		
+			# this is done to recover scores easier than what you think ;)
+			objects.glob.db.execute('update scores set completed = 0, pp = 0, score = 0 where beatmap_md5 = %s',[self.fileMD5])
+			objects.glob.db.execute('update scores_relax set completed = 0, pp = 0, score = 0 where beatmap_md5 = %s',[self.fileMD5])
+	
 	def getCachedTillerinoPP(self):
 		"""
 		Returned cached pp values for 100, 99, 98 and 95 acc nomod
@@ -445,29 +427,6 @@ class beatmap:
 	@property
 	def is_rankable(self):
 		return self.rankedStatus >= rankedStatuses.RANKED and self.rankedStatus != rankedStatuses.UNKNOWN
-	
-	@property
-	def is_autoRankCreator(self):
-		if not self.creatorID:
-			return False
-		result = objects.glob.db.fetch("SELECT active FROM autorank_users WHERE bancho_id = %s AND active = 1",[self.creatorID])
-		if not result:
-			return False
-		return result['active']
-	
-	@property
-	def is_autoRankable(self):
-		result = objects.glob.db.fetch("SELECT flag_valid FROM autorank_flags WHERE beatmap_id = %s",[self.beatmapID])
-		if not result:
-			return False
-		return result['flag_valid']
-	
-	@property
-	def is_autoLovable(self):
-		result = objects.glob.db.fetch("SELECT flag_lovable FROM autorank_flags WHERE beatmap_id = %s",[self.beatmapID])
-		if not result:
-			return False
-		return result['flag_lovable']
 
 def convertRankedStatus(approvedStatus):
 	"""
