@@ -99,6 +99,11 @@ def _wrapper_():
     def autorankFlagForLove(beatmapID):
         return autorankQueryWrapper('flag_lovable','autorank_flags','beatmap_id', beatmapID)
     def autorankAnnounce(beatmap):
+        if beatmap.rankedStatus >= 0:
+            status = 'disqualified update ranked approved qualified loved'.split()[beatmap.rankedStatus]
+        else:
+            status = 'void'
+        msg = "{} - {} [{}] has been auto-{}".format(beatmap.artist,beatmap.title,beatmap.difficultyName, status)
         webhook = DiscordWebhook(url=glob.conf.config["discord"]["ranked-map"])
         embed = DiscordEmbed(description='{}\nDownload : https://osu.ppy.sh/s/{}'.format(msg, beatmap.beatmapSetID), color=242424)
         embed.set_thumbnail(url='https://b.ppy.sh/thumb/{}.jpg'.format(str(beatmap.beatmapSetID)))
@@ -106,10 +111,6 @@ def _wrapper_():
         if userID:
             username = userUtils.getUsername(userID)
             embed.set_author(name='{}'.format(username), url='https://osu.troke.id/u/{}'.format(str(userID)), icon_url='https://a.troke.id/{}'.format(str(userID)))
-        if beatmap.rankedStatus >= 0:
-            status = 'disqualified update ranked approved qualified loved'.split()[beatmap.rankedStatus]
-        else:
-            status = 'void'
         embed.set_footer(text='This map was auto-{} from in-game'.format(status))
         webhook.add_embed(embed)
         webhook.execute()
