@@ -2,6 +2,7 @@ import time
 import datetime
 
 from common.log import logUtils as log
+from common.ripple import userUtils
 from constants import rankedStatuses
 from helpers import osuapiHelper
 from objects import glob
@@ -87,10 +88,30 @@ def _wrapper_():
         return bool(r['f'])
     def autorankActive(banchoID):
         return autorankQueryWrapper('active','autorank_users','bancho_id', banchoID)
+    def autorankUserID(banchoID):
+        r = glob.db.fetch("SELECT datenshi_id as user_id FROM autorank_users WHERE bancho_id = %s",[value])
+        if r is None:
+            return None
+        return r['user_id']
     def autorankFlagOK(beatmapID):
         return autorankQueryWrapper('flag_valid','autorank_flags','beatmap_id', beatmapID)
     def autorankFlagForLove(beatmapID):
         return autorankQueryWrapper('flag_lovable','autorank_flags','beatmap_id', beatmapID)
+    def autorankAnnounce(beatmap):
+        webhook = DiscordWebhook(url=glob.conf.config["discord"]["ranked-map"])
+        embed = DiscordEmbed(description='{}\nDownload : https://osu.ppy.sh/s/{}'.format(msg, beatmap.beatmapSetID), color=242424)
+        embed.set_thumbnail(url='https://b.ppy.sh/thumb/{}.jpg'.format(str(beatmap.beatmapSetID)))
+        userID = autorankUserID(beatmap.creatorID)
+        if userID:
+            username = userUtils.getUsername(userID)
+            embed.set_author(name='{}'.format(username), url='https://osu.troke.id/u/{}'.format(str(userID)), icon_url='https://a.troke.id/{}'.format(str(userID)))
+        if beatmap.rankedStatus >= 0:
+            status = 'disqualified update ranked approved qualified loved'.split()[beatmap.rankedStatus]
+        else:
+            status = 'void'
+        embed.set_footer(text='This map was auto-{} from in-game'.format(status))
+        webhook.add_embed(embed)
+        webhook.execute()
     def autorankCheck(beatmap):
         # No autorank check for frozen maps
         if beatmap.rankedStatusFrozen not in (0,3):
@@ -123,11 +144,10 @@ def _wrapper_():
         dateQualify = dateTouch + datetime.timedelta(days=GRAVEYARD_DAYS - QUALIFIED_DAYS)
         dateRanked  = dateTouch + datetime.timedelta(days=GRAVEYARD_DAYS)
         forLove     = autorankFlagForLove(beatmap.beatmapID)
+        rankStatus  = beatmap.rankedStatus
+        needWipe    = False
         if dateNow >= dateRanked:
-            if beatmap.rankedStatus == rankedStatuses.QUALIFIED:
-                log.info(f"Wiping {beatmap.fileMD5} leaderboard")
-                beatmap.clearLeaderboard()
-                pass
+            needWipe = rankStatus == rankedStatuses.QUALIFIED
             if forLove:
                 log.info(f"Considering {beatmap.fileMD5} to be loved")
                 beatmap.rankedStatus = rankedStatuses.LOVED
@@ -139,6 +159,16 @@ def _wrapper_():
             log.info(f"Considering {beatmap.fileMD5} for qualified")
             beatmap.rankedStatus = rankedStatuses.QUALIFIED
             beatmap.rankedStatusFrozen = 3
+        else:
+            needWipe = rankStatus >= rankedStatuses.RANKED
+            beatmap.rankedStatus = rankedStatuses.PENDING
+            beatmap.rankedStatusFrozen = 0
+        if rankStatus != beatmap.rankedStatus:
+            autorankAnnounce(beatmap)
+        if needWipe:
+            log.info(f"Wiping {beatmap.fileMD5} leaderboard")
+            beatmap.clearLeaderboard()
+            pass
     
     whitelistFunList = [criteriaControl,autorankCheck]
     whitelistFun = {}
