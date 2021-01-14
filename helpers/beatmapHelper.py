@@ -19,7 +19,7 @@ def _wrapper_():
     """
     """ CRITERIA SYSTEM """
     def getAllCriteria():
-        return glob.db.fetchAll('select * from beatmaps_criteria_control order by priority desc, id asc');
+        return glob.db.fetchAll('select * from beatmaps_criteria_control order by priority desc, criteria_id asc');
     def getMatchingCriteria(beatmap):
         criteriaIDs = []
         mapKey = {
