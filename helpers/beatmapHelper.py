@@ -90,7 +90,7 @@ def _wrapper_():
     def autorankActive(banchoID):
         return autorankQueryWrapper('active','autorank_users','bancho_id', banchoID)
     def autorankUserID(banchoID):
-        r = glob.db.fetch("SELECT datenshi_id as user_id FROM autorank_users WHERE bancho_id = %s",[value])
+        r = glob.db.fetch("SELECT datenshi_id as user_id FROM autorank_users WHERE bancho_id = %s",[banchoID])
         if r is None:
             return None
         return r['user_id']
