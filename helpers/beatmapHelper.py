@@ -6,6 +6,7 @@ from common.ripple import userUtils
 from constants import rankedStatuses
 from helpers import osuapiHelper
 from objects import glob
+from discord_webhook import DiscordWebhook, DiscordEmbed
 
 QUALIFIED_DAYS = 3
 GRAVEYARD_DAYS = 28
