@@ -107,8 +107,8 @@ def _wrapper_():
             return
         # Not checking maps with non updated date.
         log.info(f"Checking {beatmap.songName} for autorank eligiblity.")
-		obtainDateTime  = lambda t: datetime.datetime.strptime(t, "%Y-%m-%d %H:%M:%S")
-		obtainUnixClock = lambda t: int(time.mktime(t.timetuple()))
+        obtainDateTime  = lambda t: datetime.datetime.strptime(t, "%Y-%m-%d %H:%M:%S")
+        obtainUnixClock = lambda t: int(time.mktime(t.timetuple()))
         if beatmap.updateDate == 0:
             log.info(f"Updating {beatmap.fileMD5} data")
             data = osuapiHelper.osuApiRequest('get_beatmaps','h={}'.format(beatmap.fileMD5))
@@ -119,9 +119,9 @@ def _wrapper_():
         else:
             dateTouch   = datetime.datetime.fromtimestamp(beatmap.updateDate)
         
-		dateNow     = datetime.datetime.today()
-		dateQualify = dateTouch + datetime.timedelta(days=GRAVEYARD_DAYS - QUALIFIED_DAYS)
-		dateRanked  = dateTouch + datetime.timedelta(days=GRAVEYARD_DAYS)
+        dateNow     = datetime.datetime.today()
+        dateQualify = dateTouch + datetime.timedelta(days=GRAVEYARD_DAYS - QUALIFIED_DAYS)
+        dateRanked  = dateTouch + datetime.timedelta(days=GRAVEYARD_DAYS)
         forLove     = autorankFlagForLove(beatmap.beatmapID)
         if dateNow >= dateRanked:
             if beatmap.rankedStatus == rankedStatuses.QUALIFIED:
