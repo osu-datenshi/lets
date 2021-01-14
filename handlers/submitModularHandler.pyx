@@ -251,27 +251,30 @@ class handler(requestsManager.asyncRequestHandler):
 			
 			# Restrict obvious cheaters
 			is_fullmod  = bool( (s.mods & (mods.DOUBLETIME | mods.NIGHTCORE)) and (s.mods & mods.FLASHLIGHT) and (s.mods & mods.HARDROCK) and (s.mods & mods.HIDDEN) )
+			userOverPP = False
 			if not restricted:
 				limit_pp, var_limit, can_limit, pp_total_max = userUtils.obtainPPLimit(userID, s.gameMode, relax=bool(UsingRelax), modded=is_fullmod)
 				relax = 1 if used_mods & 128 else 0
 				
-				unrestricted_user = userUtils.noPPLimit(userID, relax)
+				freeLimitFlags = userUtils.noPPLimit(userID, relax)
 				null_over_pp = glob.conf.extra['lets']['submit'].get('null-over-pp',False)
 				null_mode_pp = limit_pp <= 0
 				if relax:
 					userStat = userUtils.getUserStatsRx(userID, s.gameMode)
 				else:
 					userStat = userUtils.getUserStats(userID, s.gameMode)
-				userCeilPass = userUtils.getPrivileges(userID) & privileges.USER_VERIFIED_CEILING
-				userOverPP = userStat['pp'] >= pp_total_max and not userCeilPass
+				singleScoreFlag = freeLimitFlags & 1
+				totalPPFlag     = freeLimitFlags & 2
+				userCeilPass    = totalPPFlag or (userUtils.getPrivileges(userID) & privileges.USER_VERIFIED_CEILING)
+				userOverPP      = userStat['pp'] >= pp_total_max and not userCeilPass
 				
 				if userOverPP:
-					null_over_pp, null_mode_pp, s.pp = True, False, 0
+					null_over_pp, null_mode_pp = True, False
 				
 				if null_mode_pp:
 					s.pp = -1
 					log.warning(f"Uh oh, PP less mode. {s.gameMode}/{UsingRelax}")
-				elif (userOverPP) or (s.pp >= limit_pp) and not unrestricted_user and not glob.conf.extra["mode"]["no-pp-cap"]:
+				elif (userOverPP) or (s.pp >= limit_pp and not singleScoreFlag) and not glob.conf.extra["mode"]["no-pp-cap"]:
 					if null_over_pp:
 						# forgive the user but nullify the PP gain for this run.
 						log.warning(f"Uh oh, Over-PP-Limit {s.gameMode}/{UsingRelax}")
@@ -289,7 +292,7 @@ class handler(requestsManager.asyncRequestHandler):
 						send_bot_message(warning_message)
 					else:
 						do_restrict('**{}** ({}) has been restricted due to too high pp gain and too brutal ({}pp)'.format(username, userID, s.pp), note="Restricted due to too high pp gain ({}pp)".format(s.pp))
-				if (hasattr(userUtils,'PPScoreInformation') and (userUtils.PPScoreInformation(userID, relax)) or (userID == 3)) and int(s.pp) > 0:
+				if (userUtils.PPScoreInformation(userID, relax) if hasattr(userUtils,'PPScoreInformation') else (userID == 3)) and not userOverPP and int(s.pp) > 0:
 					send_bot_message("You obtained {:.1f}/{:d}pp. Current mode total PP limit is {:d}pp".format(s.pp, limit_pp, pp_total_max))
 
 			# Check notepad hack
@@ -319,6 +322,11 @@ class handler(requestsManager.asyncRequestHandler):
 			else:
 				oldPersonalBestRank = 0
 				oldPersonalBest = None
+			if userOverPP and s.pp > 0:
+				if oldPersonalBest:
+					s.pp = min(oldPersonalBest.pp, s.pp) # PP cap. but allow score overtake.
+				else:
+					s.pp = 0
 			
 			# Save score in db
 			s.saveScoreInDB()
