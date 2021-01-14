@@ -118,7 +118,7 @@ class OsuPerfomanceCalculation:
                 f"-M {int(self.score.c50)} " \
                 f"-G {int(self.score.c100)} "
             cmd.append('osu'); cmd.append(self.mapPath)
-            cmd.append('-a'); cmd.append(int(self.score.accuracy * 100))
+            # cmd.append('-a'); cmd.append(int(self.score.accuracy * 100))
             cmd.append('-c'); cmd.append(int(self.score.maxCombo))
             cmd.append('-X'); cmd.append(int(self.score.cMiss))
             cmd.append('-M'); cmd.append(int(self.score.c50))
@@ -130,7 +130,7 @@ class OsuPerfomanceCalculation:
                 f"-X {int(self.score.cMiss)} " \
                 f"-G {int(self.score.c100)} "
             cmd.append('taiko'); cmd.append(self.mapPath)
-            cmd.append('-a'); cmd.append(int(self.score.accuracy * 100))
+            # cmd.append('-a'); cmd.append(int(self.score.accuracy * 100))
             cmd.append('-c'); cmd.append(int(self.score.maxCombo))
             cmd.append('-X'); cmd.append(int(self.score.cMiss))
             cmd.append('-G'); cmd.append(int(self.score.c100))
@@ -142,7 +142,7 @@ class OsuPerfomanceCalculation:
                 f"-T {int(self.score.c50)} " \
                 f"-D {int(self.score.c100)} "
             cmd.append('catch'); cmd.append(self.mapPath)
-            cmd.append('-a'); cmd.append(int(self.score.accuracy * 100))
+            # cmd.append('-a'); cmd.append(int(self.score.accuracy * 100))
             cmd.append('-c'); cmd.append(int(self.score.maxCombo))
             cmd.append('-X'); cmd.append(int(self.score.cMiss))
             cmd.append('-T'); cmd.append(int(self.score.c50))

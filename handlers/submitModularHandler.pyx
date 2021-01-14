@@ -207,7 +207,18 @@ class handler(requestsManager.asyncRequestHandler):
 				requests.get("{}/api/v1/fokabotMessage?{}".format(glob.conf.config["server"]["banchourl"], params))
 			
 			try:
-				s.calculatePP()
+				retry = 5
+				while retry > 0:
+					try:
+						s.calculatePP()
+					except Exception as e:
+						retry -= 1
+						if retry > 0:
+							pass
+						else:
+							raise e
+					else:
+						retry = 0
 			except Exception as e:
 				# Intercept ALL exceptions and bypass them.
 				# We want to save scores even in case PP calc fails
