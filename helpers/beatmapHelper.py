@@ -32,7 +32,7 @@ def _wrapper_():
         }
         for criteria in getAllCriteria():
             # SKIP IF ALL CRITERIA IS NULL
-            checkable = dict((k, criteria[k]) for k in mapKey)
+            checkable = dict((k, criteria[k]) for k in mapKey if criteria[k] is not None)
             if not checkable:
                 continue
             # CHECK ALL CRITERIONS HERE
@@ -48,7 +48,7 @@ def _wrapper_():
     def criteria__0001RankStatus(beatmap,iv,sv):
         if beatmap.rankedStatusFrozen:
             return
-        if beatmap.rankStatus == iv:
+        if beatmap.rankedStatus == iv:
             return
         beatmap.rankedStatus = iv
     def criteria__0002RankFreeze(beatmap,iv,sv):

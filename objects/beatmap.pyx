@@ -344,7 +344,12 @@ class beatmap:
 		# if they haven't been updated
 		if dbResult and self.refresh:
 			dbResult = False
-		
+		def performCheck():
+			if self.beatmapSetID > 100000000:
+				pass
+			else:
+				beatmapHelper.criteriaControl(self)
+			beatmapHelper.autorankCheck(self)
 		needUpdate = False
 		if not dbResult:
 			log.debug("Beatmap not found in db")
@@ -353,8 +358,7 @@ class beatmap:
 				apiResult = self.setDataFromCustomBeatmaps(md5, beatmapSetID)
 			else:
 				apiResult = self.setDataFromOsuApi(md5, beatmapSetID)
-				beatmapHelper.criteriaControl(self)
-			beatmapHelper.autorankCheck(self)
+			performCheck()
 			if not apiResult:
 				# If it's not even in osu!api, this beatmap is not submitted
 				self.rankedStatus = rankedStatuses.NOT_SUBMITTED
@@ -364,7 +368,7 @@ class beatmap:
 		else:
 			log.debug("Beatmap found in db")
 			rankedStatus = self.rankedStatus
-			beatmapHelper.autorankCheck(self)
+			performCheck()
 			needUpdate = rankedStatus != self.rankedStatus
 		if needUpdate:
 			self.addBeatmapToDB()
