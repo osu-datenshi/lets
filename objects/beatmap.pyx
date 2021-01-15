@@ -83,9 +83,10 @@ class beatmap:
 			# This beatmap is already in db, remove old record
 			# Get current frozen status
 			frozen = bdata["ranked_status_freezed"]
-			if frozen:
+			if frozen != self.rankedStatusFrozen:
+				frozen = self.rankedStatusFrozen
+			elif frozen:
 				self.rankedStatus = bdata["ranked"]
-			frozen = self.rankedStatusFrozen
 			# log.debug("Deleting old beatmap data ({})".format(bdata["id"]))
 			# objects.glob.db.execute("DELETE FROM beatmaps WHERE id = %s LIMIT 1", [bdata["id"]])
 		else:
