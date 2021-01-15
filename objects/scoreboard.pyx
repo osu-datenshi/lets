@@ -280,7 +280,7 @@ class baseScoreBoard:
 			query += " AND st.country = (SELECT country FROM %(stats_table)s WHERE id = %(userid)s LIMIT 1)"
 		# Mods
 		if self.mods > -1:
-			query += " AND st.mods = %(mods)s"
+			query += " AND sc.mods = %(mods)s"
 		# Friends
 		if self.friends:
 			query += " AND (sc.userid IN (SELECT user2 FROM users_relationships WHERE user1 = %(userid)s) OR sc.userid = %(userid)s)"
