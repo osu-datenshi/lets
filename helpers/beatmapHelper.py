@@ -21,7 +21,7 @@ def _wrapper_():
     """
     """ CRITERIA SYSTEM """
     def getAllCriteria():
-        return glob.db.fetchAll('select * from beatmaps_criteria_control order by priority desc, criteria_id asc');
+        return glob.db.fetchAll('select * from beatmaps_criteria_control where active = 1 order by priority desc, criteria_id asc');
     def getMatchingCriteria(beatmap):
         criteriaIDs = []
         mapKey = {
@@ -31,6 +31,9 @@ def _wrapper_():
             'ranked': 'rankedStatus'
         }
         for criteria in getAllCriteria():
+            # SANITY CHECK: inactive criteria get out
+            if not criteria['active']:
+                continue
             # SKIP IF ALL CRITERIA IS NULL
             checkable = dict((k, criteria[k]) for k in mapKey if criteria[k] is not None)
             if not checkable:
