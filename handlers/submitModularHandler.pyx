@@ -140,18 +140,21 @@ class handler(requestsManager.asyncRequestHandler):
 			restricted = userUtils.isRestricted(userID)
 
 			# Get variables for relax
+			prefixes = 'VANILLA RELAX SCOREV2'.split()
+			cpi = 0
+			
 			used_mods = int(scoreData[13])
 			UsingRelax = used_mods & 128
 			if used_mods & mods.SCOREV2: # put some V2 guard for now (I have a plan to implement separate system with this)
+				cpi = 2
 				self.write('ok')
 				glob.redis.delete(lock_key)
 				return
+			if UsingRelax:
+				cpi = 1
 
 			# Create score object and set its data
-			if UsingRelax:
-				log.info("[RELAX] {} has submitted a score on {}...".format(username, scoreData[0]))
-			else:
-				log.info("[VANILLA] {} has submitted a score on {}...".format(username, scoreData[0]))
+			log.info("[{}] {} has submitted a score on {}...".format(prefixes[cpi], username, scoreData[0]))
 			
 			scoreClass = score.standardScore
 			if UsingRelax:
@@ -289,7 +292,7 @@ class handler(requestsManager.asyncRequestHandler):
 						else:
 							s.pp = -1
 							warning_message = "looks like your PP gain is too high. This score won't yield PP."
-						send_bot_message(warning_message)
+						send_bot_message("[{}] {}".format(prefixes[cpi], warning_message))
 					else:
 						do_restrict('**{}** ({}) has been restricted due to too high pp gain and too brutal ({}pp)'.format(username, userID, s.pp), note="Restricted due to too high pp gain ({}pp)".format(s.pp))
 				if (userUtils.PPScoreInformation(userID, relax) if hasattr(userUtils,'PPScoreInformation') else (userID == 3)) and not userOverPP and int(s.pp) > 0:
@@ -667,7 +670,7 @@ class handler(requestsManager.asyncRequestHandler):
 				# Send message to #announce if we're rank #1
 				if newScoreboard.personalBestRank == 1 and s.completed == 3 and not restricted:
 					annmsg = "[{}] [{}/{}u/{} {}] achieved rank #1 on [https://osu.ppy.sh/b/{} {}] ({})".format(
-						"RELAX" if UsingRelax else "VANILLA",
+						prefixes[cpi],
 						glob.conf.config["server"]["serverurl"],
 						"rx/" if UsingRelax else "",
 						userID,
@@ -717,7 +720,7 @@ class handler(requestsManager.asyncRequestHandler):
 
 					# Second, get the webhook link from config
 					discordLink = 'rxscore' if UsingRelax else 'score'
-					discordMode = 'RELAX' if UsingRelax else 'VANILLA'
+					discordMode = prefixes[cpi]
 					userLink    = 'rx/u' if UsingRelax else 'u'
 					urlweb = glob.conf.config["discord"][discordLink]
 					webhook = DiscordWebhook(url=urlweb)
