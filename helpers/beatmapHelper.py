@@ -159,14 +159,14 @@ def _wrapper_():
         if dateNow >= dateRanked:
             needWipe = rankStatus == rankedStatuses.QUALIFIED
             if forLove:
-                log.info(f"Considering {beatmap.fileMD5} to be loved")
+                log.debug(f"Considering {beatmap.fileMD5} to be loved")
                 beatmap.rankedStatus = rankedStatuses.LOVED
             else:
-                log.info(f"Considering {beatmap.fileMD5} on ranking")
+                log.debug(f"Considering {beatmap.fileMD5} on ranking")
                 beatmap.rankedStatus = rankedStatuses.RANKED
             beatmap.rankedStatusFrozen = 3
         elif dateNow >= dateQualify and not forLove:
-            log.info(f"Considering {beatmap.fileMD5} for qualified")
+            log.debug(f"Considering {beatmap.fileMD5} for qualified")
             beatmap.rankedStatus = rankedStatuses.QUALIFIED
             beatmap.rankedStatusFrozen = 3
         else:
