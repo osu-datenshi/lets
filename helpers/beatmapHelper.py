@@ -1,6 +1,8 @@
 import time
 import datetime
 
+import requests
+
 from common.log import logUtils as log
 from common.ripple import userUtils
 from constants import rankedStatuses
@@ -106,17 +108,19 @@ def _wrapper_():
             status = 'disqualified update ranked approved qualified loved'.split()[beatmap.rankedStatus]
         else:
             status = 'void'
-        msg = "{} - {} [{}] has been auto-{}".format(beatmap.artist,beatmap.title,beatmap.difficultyName, status)
-        webhook = DiscordWebhook(url=glob.conf.config["discord"]["ranked-map"])
-        embed = DiscordEmbed(description='{}\nDownload : https://osu.ppy.sh/s/{}'.format(msg, beatmap.beatmapSetID), color=242424)
-        embed.set_thumbnail(url='https://b.ppy.sh/thumb/{}.jpg'.format(str(beatmap.beatmapSetID)))
-        userID = autorankUserID(beatmap.creatorID)
-        if userID:
-            username = userUtils.getUsername(userID)
-            embed.set_author(name='{}'.format(username), url='https://osu.troke.id/u/{}'.format(str(userID)), icon_url='https://a.troke.id/{}'.format(str(userID)))
-        embed.set_footer(text='This map was auto-{} from in-game'.format(status))
-        webhook.add_embed(embed)
-        webhook.execute()
+        mapData = {
+            'artist': beatmap.artist,
+            'title': beatmap.title,
+            'difficulty_name': beatmap.difficultyName,
+            'beatmapset_id': beatmap.beatmapSetID,
+            'beatmap_id': beatmap.beatmapID,
+            'rankedby': str(autorankUserID(beatmap.creatorID))
+        }
+        def banchoCallback(msg):
+            for c in '#announce #ranked-now'.split():
+                params = urlencode({"k": glob.conf.config["server"]["apikey"], "to": c, "msg": msg})
+                requests.get("{}/api/v1/fokabotMessage?{}".format(glob.conf.config["server"]["banchourl"], params))
+        rankUtils.announceMapRaw(mapData, status, autoFlag=true, banchoCallback=banchoCallback)
     def autorankCheck(beatmap):
         # No autorank check for frozen maps
         if beatmap.rankedStatusFrozen not in (0,3):
@@ -169,6 +173,7 @@ def _wrapper_():
             beatmap.rankedStatus = rankedStatuses.PENDING
             beatmap.rankedStatusFrozen = 0
         if rankStatus != beatmap.rankedStatus:
+            glob.db.execute('update beatmaps set ranked_status_freezed = 0 where beatmap_md5 = %s', [beatmap.fileMD5])
             autorankAnnounce(beatmap)
         if needWipe:
             log.info(f"Wiping {beatmap.fileMD5} leaderboard")
