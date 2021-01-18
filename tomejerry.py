@@ -1,3 +1,4 @@
+#!/usr/bin/env python3.6
 import argparse
 import logging
 import math
@@ -306,6 +307,8 @@ class Worker:
                     (lw_score.score_id,)
                 )
                 score_ = cursor.fetchone()
+                if score_ is None:
+                    continue
                 try:
                     # Recalculate pp
                     recalculated_score = self.recalc_score(score_)

@@ -249,8 +249,19 @@ class handler(requestsManager.asyncRequestHandler):
 				log.info("CHEATER GOBLOK MASUK DISCORD")
 			
 			# Do Ban
-			def do_ban():
-				pass
+			def do_ban(reason, note=None, warnlog=None):
+				userUtils.ban(userID)
+				if note:
+					userUtils.appendNotes(userID, note)
+				if warnlog:
+					log.warning(warnlog)
+				if glob.conf.config["discord"]["enable"]:
+					dcnel = glob.conf.config["discord"]["autobanned"]
+					webhook = DiscordWebhook(url=dcnel)
+					embed = DiscordEmbed(title='NEW CHEATER DETECTED!!', description=reason, color=16711680)
+					webhook.add_embed(embed)
+					log.info("CHEATER GOBLOK MASUK DISCORD")
+					webhook.execute()
 			
 			# Restrict obvious cheaters
 			is_fullmod  = bool( (s.mods & (mods.DOUBLETIME | mods.NIGHTCORE)) and (s.mods & mods.FLASHLIGHT) and (s.mods & mods.HARDROCK) and (s.mods & mods.HIDDEN) )
@@ -268,8 +279,7 @@ class handler(requestsManager.asyncRequestHandler):
 					userStat = userUtils.getUserStats(userID, s.gameMode)
 				singleScoreFlag = freeLimitFlags & 1
 				totalPPFlag     = freeLimitFlags & 2
-				userCeilPass    = totalPPFlag or (userUtils.getPrivileges(userID) & privileges.USER_VERIFIED_CEILING)
-				userOverPP      = userStat['pp'] >= pp_total_max and not userCeilPass
+				userOverPP      = userStat['pp'] >= pp_total_max and not totalPPFlag
 				
 				if userOverPP:
 					null_over_pp, null_mode_pp = True, False
@@ -342,7 +352,7 @@ class handler(requestsManager.asyncRequestHandler):
 			# Client anti-cheat flags
 			if not restricted and glob.conf.extra["mode"]["anticheat"]:
 				haxFlags = scoreData[17].count(' ') # 4 is normal, 0 is irregular but inconsistent.
-				if haxFlags != 4 and haxFlags != 0 and s.passed:
+				if haxFlags not in (0,4) and s.passed:
 					hack = getHackByFlag(int(haxFlags))
 					if type(hack) == str:
 						# THOT DETECTED
@@ -373,14 +383,7 @@ class handler(requestsManager.asyncRequestHandler):
 			norm_max  = 1000000
 			if s.score < 0 or s.score > int64_max:
 				if glob.conf.extra["mode"]["anticheat"]:
-					userUtils.ban(userID)
-					userUtils.appendNotes(userID, "Banned due to negative score (score submitter)")
-					dcnel = glob.conf.config["discord"]["autobanned"]
-					webhook = DiscordWebhook(url=dcnel)
-					embed = DiscordEmbed(title='NEW CHEATER DETECTED!!', description='**{}** ({}) has been banned due to negative score (score submitter)'.format(username, userID), color=16711680)
-					webhook.add_embed(embed)
-					log.info("CHEATER GOBLOK MASUK DISCORD")
-					webhook.execute()
+					do_ban('**{}** ({}) has been banned due to negative score (score submitter)'.format(username, userID), note="Banned due to negative score (score submitter)")
 				else:
 					send_bot_message("seems like you've submitted an invalid score value, this score won't submit for you.")
 				return
@@ -388,8 +391,7 @@ class handler(requestsManager.asyncRequestHandler):
 			# Make sure the score is not memed
 			if s.gameMode == gameModes.MANIA and s.score > norm_max:
 				if glob.conf.extra["mode"]["anticheat"]:
-					userUtils.ban(userID)
-					userUtils.appendNotes(userID, "Banned due to mania score > 1000000 (score submitter)")
+					do_ban('**{}** ({}) has been banned due to invalid score (score submitter)'.format(username, userID), note="Banned due to invalid score (score submitter)")
 				else:
 					send_bot_message("seems like you've exceed osu!mania score limit (1000000), this score won't submit for you.")
 				return
@@ -417,15 +419,8 @@ class handler(requestsManager.asyncRequestHandler):
 			# Ci metto la faccia, ci metto la testa e ci metto il mio cuore
 			if impossible_mods():
 				if glob.conf.extra["mode"]["anticheat"]:
-					userUtils.ban(userID)
-					userUtils.appendNotes(userID, "Impossible mod combination {} (score submitter)".format(s.mods))
-					dcnel = glob.conf.config["discord"]["autobanned"]
-					webhook = DiscordWebhook(url=dcnel)
-					embed = DiscordEmbed(title='NEW IDIOT CHEATER DETECTED!!')
-					embed = DiscordEmbed(description='**{}** ({}) has been detected using impossible mod combination {} (score submitter)'.format(username, userID, s.mods))
-					webhook.add_embed(embed)
-					log.info("CHEATER GOBLOK MASUK DISCORD")
-					webhook.execute()
+					do_ban('**{}** ({}) has been detected using impossible mod combination {} (score submitter)'.format(username, userID, s.mods), \
+					  note="Impossible mod combination {} (score submitter)".format(s.mods))
 				else:
 					send_bot_message("seems like you've used osu! score submitter limit (Impossible mod combination), this score won't submit for you.")
 					return
@@ -532,6 +527,8 @@ class handler(requestsManager.asyncRequestHandler):
 				if s.completed == 3 and newUserStats["pp"] != oldUserStats["pp"]:
 					leaderboardHelper.update(userID, newUserStats["pp"], s.gameMode, relax=UsingRelax)
 					leaderboardHelper.updateCountry(userID, newUserStats["pp"], s.gameMode, relax=UsingRelax)
+					if not restricted and newUserStats['pp'] >= pp_total_max and not totalPPFlag:
+						send_bot_message("hello my fellow little demon! I heard that your performance on {}'s {} is rather outstanding! Why not submit yourself to our guild for an access to next dungeon?".format(gameModes.getGamemodeFull(s.gameMode), prefixes[cpi]))
 
 			# Update total hits
 			if UsingRelax:
