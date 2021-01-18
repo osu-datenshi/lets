@@ -121,7 +121,7 @@ def _wrapper_():
             for c in '#announce #ranked-now'.split():
                 params = urlencode({"k": glob.conf.config["server"]["apikey"], "to": c, "msg": msg})
                 requests.get("{}/api/v1/fokabotMessage?{}".format(glob.conf.config["server"]["banchourl"], params))
-        rankUtils.announceMapRaw(mapData, status, autoFlag=true, banchoCallback=banchoCallback)
+        rankUtils.announceMapRaw(mapData, status, autoFlag=True, banchoCallback=banchoCallback)
     def autorankCheck(beatmap):
         # No autorank check for frozen maps
         if beatmap.rankedStatusFrozen not in (0,3):
