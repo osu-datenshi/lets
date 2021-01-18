@@ -4,6 +4,7 @@ import datetime
 import requests
 
 from common.log import logUtils as log
+from common.datenshi import rankUtils
 from common.ripple import userUtils
 from constants import rankedStatuses
 from helpers import osuapiHelper
