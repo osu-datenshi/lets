@@ -1,7 +1,7 @@
 import time
 import datetime
-
 import requests
+from urllib.parse import urlencode
 
 from common.log import logUtils as log
 from common.datenshi import rankUtils
