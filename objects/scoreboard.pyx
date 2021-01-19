@@ -6,6 +6,8 @@ from common.constants import privileges
 from objects import glob
 from objects import beatmap
 
+COUNTRY_SWITCH = 'clan'
+
 class baseScoreBoard:
 	t = {
 		'sl': 'scores',
@@ -152,7 +154,15 @@ class baseScoreBoard:
 
 		# Country ranking
 		if self.country:
-			country = "AND st.country = (SELECT country FROM %(stats_table)s WHERE id = %(userid)s LIMIT 1)"
+			if 'clan' == COUNTRY_SWITCH:
+				clanData = glob.db.fetch('select clan from user_clans where user = %(userid)s', {'userid':self.userID})
+				if clanData is None:
+					country = "AND users.id not in (SELECT user FROM user_clans)"
+				else:
+					country = "AND users.id in (SELECT user FROM user_clans WHERE user_clans.clan = {})".format(clanData['clan'])
+			else:
+				country = "AND st.country = (SELECT country FROM %(stats_table)s WHERE id = %(userid)s LIMIT 1)"
+			pass
 		else:
 			country = ""
 
@@ -277,7 +287,14 @@ class baseScoreBoard:
 		AND users.privileges & 1 > 0""".format(overwrite)
 		# Country
 		if self.country:
-			query += " AND st.country = (SELECT country FROM %(stats_table)s WHERE id = %(userid)s LIMIT 1)"
+			if 'clan' == COUNTRY_SWITCH:
+				clanData = glob.db.fetch('select clan from user_clans where user = %(userid)s', {'userid':self.userID})
+				if clanData is None:
+					query += " AND users.id not in (SELECT user FROM user_clans)"
+				else:
+					query += " AND users.id in (SELECT user FROM user_clans WHERE user_clans.clan = {})".format(clanData['clan'])
+			else:
+				query += " AND st.country = (SELECT country FROM %(stats_table)s WHERE id = %(userid)s LIMIT 1)"
 		# Mods
 		if self.mods > -1:
 			query += " AND sc.mods = %(mods)s"
