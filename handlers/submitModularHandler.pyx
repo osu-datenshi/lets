@@ -498,14 +498,10 @@ class handler(requestsManager.asyncRequestHandler):
 			log.debug("Updating {}'s stats...".format(username))
 			if UsingRelax:
 				userUtils.updateStatsRx(userID, s)
+				userUtils.incrementUserBeatmapPlaycountRX(userID, s.gameMode, beatmapInfo.beatmapID)
 			else:
 				userUtils.updateStats(userID, s)
-
-			# Update personal beatmaps playcount
-			if UsingRelax:
 				userUtils.incrementUserBeatmapPlaycount(userID, s.gameMode, beatmapInfo.beatmapID)
-			else:
-				userUtils.incrementUserBeatmapPlaycountRX(userID, s.gameMode, beatmapInfo.beatmapID)
 
 			# Get "after" stats for ranking panel
 			# and to determine if we should update the leaderboard
