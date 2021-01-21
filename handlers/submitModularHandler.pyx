@@ -266,6 +266,7 @@ class handler(requestsManager.asyncRequestHandler):
 			# Restrict obvious cheaters
 			is_fullmod  = bool( (s.mods & (mods.DOUBLETIME | mods.NIGHTCORE)) and (s.mods & mods.FLASHLIGHT) and (s.mods & mods.HARDROCK) and (s.mods & mods.HIDDEN) )
 			userOverPP = False
+			invalidPP = 0
 			if not restricted:
 				limit_pp, var_limit, can_limit, pp_total_max = userUtils.obtainPPLimit(userID, s.gameMode, relax=bool(UsingRelax), modded=is_fullmod)
 				relax = 1 if used_mods & 128 else 0
@@ -285,22 +286,19 @@ class handler(requestsManager.asyncRequestHandler):
 					null_over_pp, null_mode_pp = True, False
 				
 				if null_mode_pp:
-					s.pp = -1
-					log.warning(f"Uh oh, PP less mode. {s.gameMode}/{UsingRelax}")
+					invalidPP = 1
 				elif (userOverPP) or (s.pp >= limit_pp and not singleScoreFlag) and not glob.conf.extra["mode"]["no-pp-cap"]:
 					if null_over_pp:
 						# forgive the user but nullify the PP gain for this run.
-						log.warning(f"Uh oh, Over-PP-Limit {s.gameMode}/{UsingRelax}")
+						invalidPP = 1
 						if userOverPP:
+							invalidPP = 2
 							warning_message = "looks like your total PP is past-verification requirement. Please submit a prove to the staff that you played legit to continue."
 						elif can_limit:
-							s.pp = -1
 							warning_message = "looks like your PP gain for this play is over than what you should be able to. Please try again later once you've gained enough PP."
 						elif var_limit and is_fullmod:
-							s.pp = -1
 							warning_message = "looks like your PP gain is too high. This score won't yield PP."
 						else:
-							s.pp = -1
 							warning_message = "looks like your PP gain is too high. This score won't yield PP."
 						send_bot_message("[{}] {}".format(prefixes[cpi], warning_message))
 					else:
@@ -335,11 +333,14 @@ class handler(requestsManager.asyncRequestHandler):
 			else:
 				oldPersonalBestRank = 0
 				oldPersonalBest = None
-			if userOverPP and s.pp > 0:
+			if invalidPP == 2:
+				log.warning(f"Invalid PP: Over Limit {s.gameMode}/{UsingRelax} {userID} {s.pp}")
 				if oldPersonalBest:
 					s.pp = min(oldPersonalBest.pp, s.pp) # PP cap. but allow score overtake.
 				else:
 					s.pp = 0
+			elif invalidPP == 1:
+				s.pp = -1
 			
 			# Save score in db
 			s.saveScoreInDB()
