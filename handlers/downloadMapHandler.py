@@ -26,7 +26,7 @@ class handler(requestsManager.asyncRequestHandler):
 
 			self.set_status(302, "Moved Temporarily")
 			#URL CAN BE CHANGED TO ANYTHING
-			url = "https://osu.troke.id/d/{}{}".format(bid, "n" if noVideo else "")
+			url = "https://s.troke.id/d/{}{}".format(bid, "n" if noVideo else "")
 			self.add_header("Location", url)
 			self.add_header("Cache-Control", "no-cache")
 			self.add_header("Pragma", "no-cache")
