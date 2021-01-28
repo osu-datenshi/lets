@@ -108,7 +108,7 @@ class handler(requestsManager.asyncRequestHandler):
 				raise exceptions.loginFailedException(MODULE_NAME, userID)
 				
 			 # Score submission lock check
-			lock_key = "lets:score_submission_lock:{}:{}:{}".format(userID, scoreData[0], int(scoreData[9]))
+			lock_key = "lets:score_submission_lock:{}:{}:{}".format(userID, scoreData[0], scoreData[2])
 			if glob.redis.get(lock_key) is not None:
 				# The same score score is being submitted and it's taking a lot
 				log.warning("Score submission blocked because there's a submission lock in place ({})".format(lock_key))

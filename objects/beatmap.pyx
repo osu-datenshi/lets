@@ -83,7 +83,7 @@ class beatmap:
 			# This beatmap is already in db, remove old record
 			# Get current frozen status
 			frozen = bdata["ranked_status_freezed"]
-			if frozen != self.rankedStatusFrozen:
+			if self.rankedStatusFrozen and frozen != self.rankedStatusFrozen:
 				frozen = self.rankedStatusFrozen
 			elif frozen:
 				self.rankedStatus = bdata["ranked"]

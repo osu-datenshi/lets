@@ -343,6 +343,8 @@ class baseScore:
 			elif self.failed:
 				self.completed = 1
 		finally:
+			if userID == 3:
+				log.info("Completed status: {}".format(self.completed))
 			log.debug("Completed status: {}".format(self.completed))
 
 	def saveScoreInDB(self):
